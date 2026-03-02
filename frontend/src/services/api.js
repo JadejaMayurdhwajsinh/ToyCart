@@ -233,29 +233,47 @@ class APIService {
   }
 
   static async createProduct(payload, token) {
+    // Support both FormData (with file) and JSON payloads
+    const isFormData = payload instanceof FormData;
+    
+    const options = {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: isFormData ? payload : JSON.stringify(payload),
+    };
+
+    // Only set Content-Type for JSON, FormData sets it automatically
+    if (!isFormData) {
+      options.headers['Content-Type'] = 'application/json';
+    }
+
     const data = await handleResponse(
-      await fetch(`${API_BASE_URL}/products`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      })
+      await fetch(`${API_BASE_URL}/products`, options)
     );
     return data;
   }
 
   static async updateProduct(id, payload, token) {
+    // Support both FormData (with file) and JSON payloads
+    const isFormData = payload instanceof FormData;
+    
+    const options = {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: isFormData ? payload : JSON.stringify(payload),
+    };
+
+    // Only set Content-Type for JSON, FormData sets it automatically
+    if (!isFormData) {
+      options.headers['Content-Type'] = 'application/json';
+    }
+
     const data = await handleResponse(
-      await fetch(`${API_BASE_URL}/products/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      })
+      await fetch(`${API_BASE_URL}/products/${id}`, options)
     );
     return data;
   }
@@ -342,6 +360,16 @@ class APIService {
   static async getAdminCustomerDetail(userId, token) {
     const data = await handleResponse(
       await fetch(`${API_BASE_URL}/admin/customers/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    );
+    return data;
+  }
+
+  static async deleteAdminCustomer(userId, token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/admin/customers/${userId}`, {
+        method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
     );

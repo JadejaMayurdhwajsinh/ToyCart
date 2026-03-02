@@ -13,6 +13,7 @@ const AdminCustomers = () => {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
 
@@ -75,6 +76,21 @@ const AdminCustomers = () => {
     }
   };
 
+  const handleDeleteCustomer = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      await APIService.deleteAdminCustomer(deleteConfirm, token);
+      await loadCustomers();
+      setSelected(null);
+      setDeleteConfirm(null);
+    } catch (err) {
+      setError(err.message || "Unable to delete customer.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="admin-page">
       <div className="admin-page-header">
@@ -127,6 +143,13 @@ const AdminCustomers = () => {
                 <td>
                   <button className="admin-btn-edit" onClick={() => openCustomer(customer)}>
                     View History
+                  </button>
+                  <button 
+                    className="admin-btn-delete" 
+                    onClick={() => setDeleteConfirm(customer.id)}
+                    style={{ marginLeft: "8px" }}
+                  >
+                    Delete
                   </button>
                 </td>
               </tr>
@@ -181,6 +204,45 @@ const AdminCustomers = () => {
                   </span>
                 </div>
               ))}
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: "20px" }}>
+              <button className="admin-btn-secondary" onClick={() => setSelected(null)}>Close</button>
+              <button 
+                className="admin-btn-delete" 
+                onClick={() => setDeleteConfirm(selected.id)}
+              >
+                Delete Customer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="admin-modal-overlay" onClick={() => !loading && setDeleteConfirm(null)}>
+          <div className="admin-modal confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Customer?</h3>
+            <p>This will permanently remove the customer account. This action cannot be undone.</p>
+            <p style={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
+              Note: Customer can only be deleted if they have no active orders (pending, processing, or shipped).
+            </p>
+            <div className="modal-actions">
+              <button 
+                className="admin-btn-secondary" 
+                onClick={() => setDeleteConfirm(null)}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button 
+                className="admin-btn-delete" 
+                onClick={handleDeleteCustomer}
+                disabled={loading}
+              >
+                {loading ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </div>
         </div>

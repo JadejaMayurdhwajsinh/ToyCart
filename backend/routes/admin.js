@@ -123,6 +123,36 @@ router.get('/customers/:userId', async (req, res, next) => {
   }
 });
 
+// ========== DELETE CUSTOMER ==========
+router.delete('/customers/:userId', async (req, res, next) => {
+  try {
+    const customer = await User.findByPk(req.params.userId);
+
+    if (!customer || customer.role !== 'customer') {
+      return next(new AppError('Customer not found', 404));
+    }
+
+    // Get all orders for this customer to check status
+    const orders = await Order.findAll({
+      where: { userId: customer.id, status: { [Op.notIn]: ['delivered', 'cancelled'] } }
+    });
+
+    if (orders.length > 0) {
+      return next(new AppError('Cannot delete customer with pending or active orders. Please cancel/complete all orders first.', 400));
+    }
+
+    // Delete the customer
+    await customer.destroy();
+
+    res.json({
+      success: true,
+      message: 'Customer deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ========== GET ALL ORDERS ==========
 router.get('/orders', async (req, res, next) => {
   try {

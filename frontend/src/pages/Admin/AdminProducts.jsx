@@ -9,6 +9,8 @@ const emptyProduct = {
   price: "",
   stock: "",
   image_url: "",
+  image: null,
+  imagePreview: null,
   description: "",
   short_description: "",
   is_featured: false,
@@ -86,6 +88,8 @@ const AdminProducts = () => {
       price: product.price,
       stock: product.stock,
       image_url: product.image_url,
+      image: null,
+      imagePreview: product.image_url,
       description: product.description || "",
       short_description: product.short_description || "",
       is_featured: !!product.is_featured,
@@ -100,16 +104,20 @@ const AdminProducts = () => {
       setLoading(true);
       setError("");
 
-      const payload = {
-        name: form.name,
-        price: Number(form.price),
-        stock: Number(form.stock),
-        categoryId: Number(form.categoryId),
-        image_url: form.image_url,
-        description: form.description,
-        short_description: form.short_description,
-        is_featured: !!form.is_featured,
-      };
+      // Use FormData for file upload support
+      const payload = new FormData();
+      payload.append("name", form.name);
+      payload.append("price", Number(form.price));
+      payload.append("stock", Number(form.stock));
+      payload.append("categoryId", Number(form.categoryId));
+      payload.append("description", form.description);
+      payload.append("short_description", form.short_description);
+      payload.append("is_featured", !!form.is_featured);
+      
+      // Append file if selected
+      if (form.image instanceof File) {
+        payload.append("image", form.image);
+      }
 
       if (editingProduct) {
         await APIService.updateProduct(editingProduct, payload, token);
@@ -250,8 +258,53 @@ const AdminProducts = () => {
                 </div>
               </div>
               <div className="admin-form-group">
-                <label>Image URL</label>
-                <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://..." />
+                <label>Product Image</label>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const preview = URL.createObjectURL(file);
+                          setForm({ ...form, image: file, imagePreview: preview });
+                        }
+                      }}
+                      placeholder="Select image file"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '14px'
+                      }}
+                    />
+                    <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                      Supported: PNG, JPEG, GIF, WebP (Max 5MB)
+                    </small>
+                  </div>
+                  {form.imagePreview && (
+                    <div style={{
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      border: '1px solid #ddd',
+                      backgroundColor: '#f5f5f5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <img
+                        src={form.imagePreview}
+                        alt="Preview"
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="admin-form-group">
                 <label>Description</label>
