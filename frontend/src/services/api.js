@@ -1,7 +1,10 @@
 // API Service - Centralized data fetching
 // All frontend-network communication with the ToyCart backend should go through this layer.
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL
+    ? `${import.meta.env.VITE_API_URL}/api`
+    : 'http://localhost:5000/api';
 
 async function handleResponse(response) {
   if (!response.ok) {

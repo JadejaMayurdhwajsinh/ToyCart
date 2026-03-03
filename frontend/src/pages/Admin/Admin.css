@@ -274,10 +274,11 @@
   /* subtle glow so logo pops on the ocean sidebar */
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.25));
   transition: transform 0.2s;
+  transform: scale(2.5) 
 }
 
 .toycart:hover {
-  transform: scale(1.08) rotate(-3deg);
+  transform: scale(2.9);
 }
 
 /* Slightly smaller when sidebar is collapsed */

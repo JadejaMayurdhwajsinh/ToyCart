@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
-import APIService from "../../services/api";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const AdminLogin = () => {
   const [credentials, setCredentials] = useState({ email: "", password: "" });
@@ -15,21 +16,40 @@ const AdminLogin = () => {
     setError("");
 
     try {
-      const data = await APIService.login(credentials.email, credentials.password);
+      const res = await fetch(`${API_URL}/api/users/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+        }),
+      });
 
-      if (data?.user?.role !== "admin") {
-        setError("You are not authorized as an admin.");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Invalid email or password.");
         setLoading(false);
         return;
       }
 
+      // Block non-admin users
+      if (data.user?.role !== "admin") {
+        setError("Access denied. Admin accounts only.");
+        setLoading(false);
+        return;
+      }
+
+      // Save token + user to localStorage
       localStorage.setItem("adminToken", data.token);
+      localStorage.setItem("adminUser", JSON.stringify(data.user));
       navigate("/admin/dashboard");
+
     } catch (err) {
-      setError(err.message || "Invalid email or password.");
-    } finally {
-      setLoading(false);
+      setError("Cannot connect to server. Make sure your backend is running on port 5000.");
     }
+
+    setLoading(false);
   };
 
   return (

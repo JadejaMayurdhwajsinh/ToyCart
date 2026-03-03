@@ -1,93 +1,110 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import "./Admin.css";
-import APIService from "../../services/api";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const token = () => localStorage.getItem("adminToken");
 
 const statusColors = {
-  delivered: "#22c55e",
+  delivered:  "#22c55e",
+  confirmed:  "#3b82f6",
   processing: "#f59e0b",
-  shipped: "#3b82f6",
-  pending: "#94a3b8",
-  cancelled: "#ef4444",
+  shipped:    "#6366f1",
+  pending:    "#94a3b8",
+  cancelled:  "#ef4444",
 };
 
-const allStatuses = ["All", "pending", "processing", "shipped", "delivered", "cancelled"];
+const allStatuses = ["All", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
 
 const AdminOrders = () => {
-  const [orders, setOrders] = useState([]);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [orders,        setOrders]        = useState([]);
+  const [search,        setSearch]        = useState("");
+  const [statusFilter,  setStatusFilter]  = useState("All");
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState("");
+  const [updating,      setUpdating]      = useState(false);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
-
-  const loadOrders = async () => {
+  // ── Fetch orders ─────────────────────────────────────────
+  const fetchOrders = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      setError("");
-      const params = {};
-      if (statusFilter !== "All") params.status = statusFilter;
-      if (search) params.search = search;
+      const params = new URLSearchParams({ limit: 100 });
+      if (statusFilter !== "All") params.set("status", statusFilter);
+      if (search)                  params.set("search", search);
 
-      const data = await APIService.getAdminOrders(params, token);
-      const list = (data.orders || []).map((o) => ({
-        id: o.id,
-        customer: o.User?.name || "Unknown",
-        email: o.User?.email || "",
-        amount: Number(o.total_amount || 0),
-        status: o.status,
-        date: new Date(o.createdAt).toISOString().slice(0, 10),
-      }));
-      setOrders(list);
-    } catch (err) {
-      setError("Unable to load orders.");
-    } finally {
-      setLoading(false);
+      const res  = await fetch(`${API_URL}/api/admin/orders?${params}`, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+      const data = await res.json();
+      if (data.success) setOrders(data.orders);
+      else setError(data.message || "Failed to load orders.");
+    } catch {
+      setError("Cannot connect to server.");
     }
+    setLoading(false);
   };
 
-  useEffect(() => {
-    loadOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  useEffect(() => { fetchOrders(); }, [search, statusFilter]);
 
-  const filtered = orders.filter((o) => {
-    const matchSearch =
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "All" || o.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
-
+  // ── Update status ─────────────────────────────────────────
   const updateStatus = async (orderId, newStatus) => {
+    setUpdating(true);
     try {
-      setError("");
-      await APIService.updateAdminOrderStatus(orderId, { status: newStatus }, token);
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-      );
-      if (selectedOrder?.id === orderId) {
-        setSelectedOrder((prev) => ({ ...prev, status: newStatus }));
+      const res  = await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token()}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Update list + modal state locally (no full refetch needed)
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+        );
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder((prev) => ({ ...prev, status: newStatus }));
+        }
+      } else {
+        alert(data.message || "Failed to update status.");
       }
-    } catch (err) {
-      setError("Unable to update order status.");
+    } catch {
+      alert("Cannot connect to server.");
+    }
+    setUpdating(false);
+  };
+
+  // ── View order detail ─────────────────────────────────────
+  const viewOrder = async (order) => {
+    // Fetch full order detail (includes OrderItems + Product names)
+    try {
+      const res  = await fetch(`${API_URL}/api/admin/orders/${order.id}`, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+      const data = await res.json();
+      if (data.success) setSelectedOrder(data.order);
+      else setSelectedOrder(order); // fallback to list data
+    } catch {
+      setSelectedOrder(order);
     }
   };
 
+  // ── Render ────────────────────────────────────────────────
   return (
     <div className="admin-page">
       <div className="admin-page-header">
         <h2>Orders</h2>
-        <span className="admin-count">{filtered.length} orders</span>
+        <span className="admin-count">{orders.length} orders</span>
       </div>
 
-      {error && <p style={{ color: "#c00", marginBottom: "12px" }}>{error}</p>}
+      {error && <div className="admin-error-msg">{error}</div>}
 
       <div className="admin-filters">
         <input
           className="admin-search"
-          placeholder="Search by order ID or customer..."
+          placeholder="Search by customer name or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -104,97 +121,107 @@ const AdminOrders = () => {
         </div>
       </div>
 
-      <div className="admin-table-wrap">
-        {loading && <div className="admin-loading">Loading orders...</div>}
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((order) => (
-              <tr key={order.id}>
-                <td className="order-id">{order.id}</td>
-                <td>
-                  <div>{order.customer}</div>
-                  <div className="sub-text">{order.email}</div>
-                </td>
-                <td>₹{order.amount.toLocaleString()}</td>
-                <td>
-                  <span
-                    className="status-badge"
-                    style={{
-                      background: statusColors[order.status] + "22",
-                      color: statusColors[order.status],
-                    }}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-                <td>{order.date}</td>
-                <td>
-                  <button
-                    className="admin-btn-edit"
-                    onClick={() => setSelectedOrder(order)}
-                  >
-                    View
-                  </button>
-                </td>
+      {loading ? (
+        <div className="admin-loading">Loading orders...</div>
+      ) : (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 && <div className="empty-state">No orders found.</div>}
-      </div>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id}>
+                  <td className="order-id">#{order.id}</td>
+                  <td>
+                    <div>{order.User?.name || "—"}</div>
+                    <div className="sub-text">{order.User?.email}</div>
+                  </td>
+                  <td>₹{Number(order.total_amount).toLocaleString()}</td>
+                  <td>
+                    <span
+                      className="status-badge"
+                      style={{
+                        background: (statusColors[order.status] || "#94a3b8") + "22",
+                        color: statusColors[order.status] || "#94a3b8",
+                      }}
+                    >
+                      {order.status}
+                    </span>
+                  </td>
+                  <td>{new Date(order.createdAt).toLocaleDateString("en-IN")}</td>
+                  <td>
+                    <button className="admin-btn-edit" onClick={() => viewOrder(order)}>
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {orders.length === 0 && <div className="empty-state">No orders found.</div>}
+        </div>
+      )}
 
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="admin-modal-overlay" onClick={() => setSelectedOrder(null)}>
           <div className="admin-modal order-detail-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{selectedOrder.id}</h3>
+              <h3>Order #{selectedOrder.id}</h3>
               <button className="modal-close" onClick={() => setSelectedOrder(null)}>✕</button>
             </div>
 
             <div className="order-detail-grid">
               <div className="order-detail-section">
                 <h4>Customer</h4>
-                <p>{selectedOrder.customer}</p>
-                <p className="sub-text">{selectedOrder.email}</p>
-                <p className="sub-text">{selectedOrder.address}</p>
+                <p>{selectedOrder.User?.name || "—"}</p>
+                <p className="sub-text">{selectedOrder.User?.email}</p>
+                <p className="sub-text">{selectedOrder.User?.phone}</p>
+                <p className="sub-text">{selectedOrder.shipping_address}</p>
               </div>
               <div className="order-detail-section">
                 <h4>Order Info</h4>
-                <p>Date: {selectedOrder.date}</p>
-                <p>Total: ₹{selectedOrder.amount.toLocaleString()}</p>
+                <p>Date: {new Date(selectedOrder.createdAt).toLocaleDateString("en-IN")}</p>
+                <p>Total: ₹{Number(selectedOrder.total_amount).toLocaleString()}</p>
+                {selectedOrder.tracking_number && (
+                  <p className="sub-text">Tracking: {selectedOrder.tracking_number}</p>
+                )}
               </div>
             </div>
 
+            {/* Order Items */}
             <div className="order-items">
               <h4>Items</h4>
-              {selectedOrder.items.map((item, i) => (
+              {selectedOrder.OrderItems?.map((item, i) => (
                 <div key={i} className="order-item-row">
-                  <span>{item.name}</span>
-                  <span>Qty: {item.qty}</span>
-                  <span>₹{item.price.toLocaleString()}</span>
+                  <span>{item.Product?.name || `Product #${item.productId}`}</span>
+                  <span>Qty: {item.quantity}</span>
+                  <span>₹{Number(item.price).toLocaleString()}</span>
                 </div>
               ))}
+              {!selectedOrder.OrderItems?.length && (
+                <p className="sub-text">No item details available.</p>
+              )}
             </div>
 
+            {/* Update Status */}
             <div className="order-status-update">
               <h4>Update Status</h4>
               <div className="status-btns">
-                {["pending", "processing", "shipped", "delivered", "cancelled"].map((s) => (
+                {["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"].map((s) => (
                   <button
                     key={s}
                     className={`status-update-btn ${selectedOrder.status === s ? "current" : ""}`}
                     style={{ "--color": statusColors[s] }}
+                    disabled={updating}
                     onClick={() => updateStatus(selectedOrder.id, s)}
                   >
                     {s}

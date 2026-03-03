@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./Admin.css";
-import APIService from "../../services/api";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const statusColors = {
-  delivered: "#22c55e",
+  delivered:  "#22c55e",
+  confirmed:  "#3b82f6",
   processing: "#f59e0b",
-  shipped: "#3b82f6",
-  pending: "#94a3b8",
-  cancelled: "#ef4444",
+  shipped:    "#6366f1",
+  pending:    "#94a3b8",
+  cancelled:  "#ef4444",
 };
 
 const Dashboard = () => {
@@ -17,36 +19,26 @@ const Dashboard = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
-    const fetchStats = async () => {
-      try {
-        setError("");
-        const data = await APIService.getAdminDashboardStats(token);
-        const s = data?.stats || {};
 
-        const recentOrders = (s.recentOrders || []).map((o) => ({
-          id: o.id,
-          customer: o.User?.name || "Unknown",
-          amount: Number(o.total_amount || 0),
-          status: o.status,
-          date: new Date(o.createdAt).toISOString().slice(0, 10),
-        }));
-
-        setStats({
-          totalProducts: s.totalProducts || 0,
-          totalOrders: s.totalOrders || 0,
-          totalCustomers: s.totalCustomers || 0,
-          totalRevenue: s.totalRevenue || 0,
-          recentOrders,
-        });
-      } catch (err) {
-        setError("Unable to load dashboard stats.");
-      }
-    };
-
-    fetchStats();
+    fetch(`${API_URL}/api/admin/dashboard/stats`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setStats(data.stats);
+        } else {
+          setError(data.message || "Failed to load dashboard.");
+        }
+      })
+      .catch(() => setError("Cannot connect to server."));
   }, []);
 
-  if (!stats) return <div className="admin-loading">Loading dashboard...</div>;
+  if (error) return <div className="admin-loading">⚠ {error}</div>;
+  if (!stats)  return <div className="admin-loading">Loading dashboard...</div>;
 
   return (
     <div className="admin-dashboard">
@@ -57,15 +49,13 @@ const Dashboard = () => {
         </span>
       </div>
 
-      {error && <p style={{ color: "#c00", marginBottom: "12px" }}>{error}</p>}
-
       {/* Stat Cards */}
       <div className="stats-grid">
         {[
-          { label: "Total Revenue", value: `₹${stats.totalRevenue.toLocaleString()}`, icon: "🪙", color: "#255F83", link: "/admin/orders" },
-          { label: "Products", value: stats.totalProducts, icon: "🧸", color: "#b89ef8", link: "/admin/products" },
-          { label: "Orders", value: stats.totalOrders, icon: "📦", color: "#c8d800", link: "/admin/orders" },
-          { label: "Customers", value: stats.totalCustomers, icon: "🎈", color: "#d88a96", link: "/admin/customers" },
+          { label: "Total Revenue",  value: `₹${Number(stats.totalRevenue).toLocaleString()}`,  icon: "🪙", color: "#255F83", link: "/admin/orders" },
+          { label: "Products",       value: stats.totalProducts,   icon: "🧸", color: "#b89ef8", link: "/admin/products" },
+          { label: "Orders",         value: stats.totalOrders,     icon: "📦", color: "#c8d800", link: "/admin/orders" },
+          { label: "Customers",      value: stats.totalCustomers,  icon: "🎈", color: "#d88a96", link: "/admin/customers" },
         ].map((stat) => (
           <Link to={stat.link} key={stat.label} className="stat-card" style={{ "--accent": stat.color }}>
             <div className="stat-icon" style={{ color: stat.color }}>{stat.icon}</div>
@@ -95,24 +85,33 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {stats.recentOrders.map((order) => (
+              {stats.recentOrders?.map((order) => (
                 <tr key={order.id}>
-                  <td className="order-id">{order.id}</td>
-                  <td>{order.customer}</td>
-                  <td>₹{order.amount.toLocaleString()}</td>
+                  <td className="order-id">#{order.id}</td>
+                  <td>
+                    <div>{order.User?.name || "—"}</div>
+                    <div className="sub-text">{order.User?.email}</div>
+                  </td>
+                  <td>₹{Number(order.total_amount).toLocaleString()}</td>
                   <td>
                     <span
                       className="status-badge"
-                      style={{ background: statusColors[order.status] + "22", color: statusColors[order.status] }}
+                      style={{
+                        background: (statusColors[order.status] || "#94a3b8") + "22",
+                        color: statusColors[order.status] || "#94a3b8",
+                      }}
                     >
                       {order.status}
                     </span>
                   </td>
-                  <td>{order.date}</td>
+                  <td>{new Date(order.createdAt).toLocaleDateString("en-IN")}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {!stats.recentOrders?.length && (
+            <div className="empty-state">No orders yet.</div>
+          )}
         </div>
       </div>
     </div>

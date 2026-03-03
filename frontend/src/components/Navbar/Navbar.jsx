@@ -40,12 +40,12 @@ function Navbar() {
                 </div>
                 <ul className="nav-center">
                     <li><Link to="/">Home</Link></li>
-                    <li><Link to="/Checkout">Checkout</Link></li>
-                    <li><Link to="/Alltoys">Alltoys</Link></li>
+                    {/* <li><Link to="/Checkout">Checkout</Link></li> */}
+                    <li><Link to="/Alltoys">Product</Link></li>
                     <li><Link to="/Order">Order</Link></li>
                     <li><Link to="/About">About</Link></li>
-                    <li><Link to="/Collection">Collection</Link></li>
-                    <li><Link to="/Product">Product</Link></li>
+                    {/* <li><Link to="/Collection">Collection</Link></li> */}
+                    {/* <li><Link to="/Product">Product</Link></li> */}
                 </ul>
                 <div className="nav-right">
                     {/* <button className="icon-btn">

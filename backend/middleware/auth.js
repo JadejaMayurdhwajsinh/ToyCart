@@ -19,7 +19,7 @@ const authMiddleware = async (req, res, next) => {
 
     if (!user) {
       return next(new AppError('User not found', 401));
-    }
+    } 
 
     req.user = user;
     next();

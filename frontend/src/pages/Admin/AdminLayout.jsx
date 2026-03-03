@@ -58,7 +58,7 @@ const AdminLayout = () => {
           </button>
           <div className="topbar-right">
             <span className="admin-badge">Admin</span>
-            <span className="admin-email">admin@store.com</span>
+            <span className="admin-email">admin@toycart.com</span>
           </div>
         </header>
         <main className="admin-content">

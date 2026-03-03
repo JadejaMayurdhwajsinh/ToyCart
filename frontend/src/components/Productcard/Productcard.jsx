@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import "./Productcard.css";
 import wishlisticon from "../../assets/wishlist-icon.svg";
 import coin from "../../assets/coin-icon.svg";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function Productcard({ id, ProductImage, ProductName, Price }) {
 
@@ -13,6 +14,16 @@ function Productcard({ id, ProductImage, ProductName, Price }) {
         window.location.href = `/Pdp/${id}`;
     };
 
+    const getImageUrl = (path) => {
+        if (!path) return "";
+        if (path.startsWith("http")) return path;
+        return `${API_URL}${path}`;
+    };
+
+    console.log("API_URL:", API_URL);
+    console.log("ProductImage:", ProductImage);
+    console.log("Full src:", `${API_URL}/uploads/${ProductImage}`);
+
     return (
         <Link to={`/Pdp/${id}`} className="product-card-link">
             <div className="product-card">
@@ -22,7 +33,12 @@ function Productcard({ id, ProductImage, ProductName, Price }) {
                         <img src={wishlisticon} alt="wishlist icon" className="wishlist-icon" />
                     </div>
                     <div className="product-card__top-second">
-                        <img src={ProductImage} alt={ProductName} className="product-img" />
+                        <img
+                            src={getImageUrl(ProductImage)}
+                            alt={ProductName}
+                            className="product-img"
+                        />
+
                         <button className="addToToybox" onClick={handleAddToToybox}>Add to toybox</button>
                     </div>
                 </div>

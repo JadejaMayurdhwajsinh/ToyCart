@@ -13,8 +13,8 @@
 }
 
 .product-img {
-    max-width: 230px;
-    max-height: 230px;
+    width: 270px;
+    height: 230px;
     padding: 20px;
     z-index: 1;
     position: relative;
@@ -24,6 +24,8 @@
 .product-card__bottom {
     padding: 22px;
     display: flex;
+    gap: 15px;
+    margin-top: 30px;
     flex-direction: column;
     background-color: #FFFFFF;
     border-radius: 0 0 10px 10px;

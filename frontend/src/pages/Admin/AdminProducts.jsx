@@ -32,6 +32,12 @@ const AdminProducts = () => {
 
   const token = typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
 
+  const getImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    return `http://localhost:5000${path}`; // change port if needed
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -43,7 +49,7 @@ const AdminProducts = () => {
 
       setProducts((prodRes.products || []).map((p) => ({
         ...p,
-        categoryName: p.Category?.name || "Uncategorized",
+        categoryName: p.Category?.name || "Uncategorized",  
       })));
 
       setCategories((catRes.categories || []).map((c) => ({
@@ -113,7 +119,7 @@ const AdminProducts = () => {
       payload.append("description", form.description);
       payload.append("short_description", form.short_description);
       payload.append("is_featured", !!form.is_featured);
-      
+
       // Append file if selected
       if (form.image instanceof File) {
         payload.append("image", form.image);
@@ -195,7 +201,14 @@ const AdminProducts = () => {
               <tr key={product.id}>
                 <td>
                   <div className="product-cell">
-                    <img src={product.image_url || "https://placehold.co/40x40/1a1a2e/fff?text=P"} alt={product.name} className="product-thumb" />
+                    <img
+                      src={
+                        getImageUrl(product.image_url) ||
+                        "https://placehold.co/40x40/1a1a2e/fff?text=P"
+                      }
+                      alt={product.name}
+                      className="product-thumb"
+                    />
                     <span>{product.name}</span>
                   </div>
                 </td>
