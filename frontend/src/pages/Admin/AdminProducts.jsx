@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./Admin.css";
 import APIService from "../../services/api";
 
@@ -16,6 +16,13 @@ const emptyProduct = {
   is_featured: false,
 };
 
+// 4 empty gallery slots matching DB field: additional_images (JSON array)
+const emptyGallery = [
+  { file: null, preview: null, existing: null },
+  { file: null, preview: null, existing: null },
+  { file: null, preview: null, existing: null },
+];
+
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -25,17 +32,21 @@ const AdminProducts = () => {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [form, setForm] = useState(emptyProduct);
+  const [gallery, setGallery] = useState(emptyGallery); // additional_images slots
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [categoryForm, setCategoryForm] = useState({ name: "", description: "" });
+
+  // One ref per gallery slot
+  const galleryRefs = [useRef(null), useRef(null), useRef(null)];
 
   const token = typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
 
   const getImageUrl = (path) => {
     if (!path) return null;
     if (path.startsWith("http")) return path;
-    return `http://localhost:5000${path}`; // change port if needed
+    return `http://localhost:5000${path}`;
   };
 
   const loadData = async () => {
@@ -49,7 +60,7 @@ const AdminProducts = () => {
 
       setProducts((prodRes.products || []).map((p) => ({
         ...p,
-        categoryName: p.Category?.name || "Uncategorized",  
+        categoryName: p.Category?.name || "Uncategorized",
       })));
 
       setCategories((catRes.categories || []).map((c) => ({
@@ -77,6 +88,7 @@ const AdminProducts = () => {
 
   const openAdd = () => {
     setForm(emptyProduct);
+    setGallery(emptyGallery);
     setEditingProduct(null);
     setShowModal(true);
   };
@@ -100,17 +112,59 @@ const AdminProducts = () => {
       short_description: product.short_description || "",
       is_featured: !!product.is_featured,
     });
+
+    // Populate gallery from existing additional_images (JSON array of paths)
+    const existing = Array.isArray(product.additional_images)
+      ? product.additional_images
+      : [];
+    setGallery(
+      emptyGallery.map((slot, i) =>
+        existing[i]
+          ? { file: null, preview: null, existing: existing[i] }
+          : { file: null, preview: null, existing: null }
+      )
+    );
+
     setEditingProduct(product.id);
     setShowModal(true);
   };
 
+  // ── Gallery slot handlers ──────────────────────────────────
+  const handleGalleryChange = (index, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be under 5MB.");
+      return;
+    }
+    const preview = URL.createObjectURL(file);
+    setGallery((prev) =>
+      prev.map((slot, i) =>
+        i === index ? { file, preview, existing: null } : slot
+      )
+    );
+  };
+
+  const removeGallerySlot = (index) => {
+    setGallery((prev) =>
+      prev.map((slot, i) =>
+        i === index ? { file: null, preview: null, existing: null } : slot
+      )
+    );
+    if (galleryRefs[index].current) galleryRefs[index].current.value = "";
+  };
+
+  // ── Save ──────────────────────────────────────────────────
   const handleSave = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
       setError("");
 
-      // Use FormData for file upload support
       const payload = new FormData();
       payload.append("name", form.name);
       payload.append("price", Number(form.price));
@@ -120,10 +174,24 @@ const AdminProducts = () => {
       payload.append("short_description", form.short_description);
       payload.append("is_featured", !!form.is_featured);
 
-      // Append file if selected
+      // Main image
       if (form.image instanceof File) {
         payload.append("image", form.image);
       }
+
+      // Additional images → sent as "additional_images" files
+      // Backend will store paths as JSON array in additional_images column
+      gallery.forEach((slot) => {
+        if (slot.file instanceof File) {
+          payload.append("additional_images", slot.file);
+        }
+      });
+
+      // Tell backend which existing additional_images to keep (not replaced)
+      const keepExisting = gallery
+        .filter((slot) => slot.existing && !slot.file)
+        .map((slot) => slot.existing);
+      payload.append("keep_additional_images", JSON.stringify(keepExisting));
 
       if (editingProduct) {
         await APIService.updateProduct(editingProduct, payload, token);
@@ -270,6 +338,8 @@ const AdminProducts = () => {
                   <input required type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} placeholder="10" />
                 </div>
               </div>
+
+              {/* ── Main Image (UNCHANGED) ── */}
               <div className="admin-form-group">
                 <label>Product Image</label>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -284,7 +354,6 @@ const AdminProducts = () => {
                           setForm({ ...form, image: file, imagePreview: preview });
                         }
                       }}
-                      placeholder="Select image file"
                       style={{
                         display: 'block',
                         width: '100%',
@@ -311,7 +380,7 @@ const AdminProducts = () => {
                       justifyContent: 'center'
                     }}>
                       <img
-                        src={form.imagePreview}
+                        src={getImageUrl(form.imagePreview) || form.imagePreview}
                         alt="Preview"
                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }}
                       />
@@ -319,6 +388,56 @@ const AdminProducts = () => {
                   )}
                 </div>
               </div>
+
+              {/* ── Additional Images (NEW) — maps to additional_images JSON column ── */}
+              <div className="admin-form-group">
+                <label>Additional Images <span style={{ color: 'var(--text-muted)', fontWeight: 600, textTransform: 'none', fontSize: '11px' }}>(up to 3 — shown in product gallery)</span></label>
+                <div className="gallery-grid-4">
+                  {gallery.map((slot, index) => (
+                    <div key={index} className="gallery-slot-4">
+                      {/* Filled slot */}
+                      {(slot.preview || slot.existing) ? (
+                        <>
+                          <img
+                            src={slot.preview ? slot.preview : getImageUrl(slot.existing)}
+                            alt={`Additional ${index + 1}`}
+                            className="gallery-slot-img-4"
+                            onError={(e) => { e.target.src = "https://placehold.co/80x80/DECCFE/255F83?text=🧸"; }}
+                          />
+                          <button
+                            type="button"
+                            className="gallery-remove-btn"
+                            onClick={() => removeGallerySlot(index)}
+                            title="Remove"
+                          >✕</button>
+                        </>
+                      ) : (
+                        /* Empty slot */
+                        <label
+                          className="gallery-slot-empty-4"
+                          htmlFor={`gallery-input-${index}`}
+                          title={`Add image ${index + 1}`}
+                        >
+                          <span className="gallery-plus-icon">+</span>
+                          <span className="gallery-slot-num">Image {index + 1}</span>
+                        </label>
+                      )}
+                      <input
+                        id={`gallery-input-${index}`}
+                        ref={galleryRefs[index]}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleGalleryChange(index, e)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <small style={{ color: '#666', marginTop: '6px', display: 'block' }}>
+                  Supported: PNG, JPEG, GIF, WebP (Max 5MB each)
+                </small>
+              </div>
+
               <div className="admin-form-group">
                 <label>Description</label>
                 <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Product description..." />
@@ -339,7 +458,9 @@ const AdminProducts = () => {
               </div>
               <div className="modal-actions">
                 <button type="button" className="admin-btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="admin-btn-primary">{editingProduct ? "Save Changes" : "Add Product"}</button>
+                <button type="submit" className="admin-btn-primary" disabled={loading}>
+                  {loading ? "Saving..." : editingProduct ? "Save Changes" : "Add Product"}
+                </button>
               </div>
             </form>
           </div>

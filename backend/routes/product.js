@@ -2,12 +2,22 @@ const express = require('express');
 const { Op } = require('sequelize');
 const { Product, Category, Review, User } = require('../config/db');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
-const { uploadSingle } = require('../middleware/upload');
+const { uploadSingle, uploadProductImages } = require('../middleware/upload'); // ← added uploadProductImages
 const { AppError } = require('../utils/errorHandler');
 const fs = require('fs');
 const path = require('path');
 
 const router = express.Router();
+
+// ── Helper: delete a file from disk safely ──
+const deleteFile = (filePath) => {
+  if (filePath && filePath.startsWith('/uploads/products/')) {
+    const fullPath = path.join(__dirname, '../' + filePath);
+    fs.unlink(fullPath, (err) => {
+      if (err) console.log('Error deleting file:', err);
+    });
+  }
+};
 
 // ========== GET ALL PRODUCTS (WITH FILTERS) ==========
 router.get('/', async (req, res, next) => {
@@ -25,10 +35,8 @@ router.get('/', async (req, res, next) => {
 
     const where = {};
 
-    // Category filter
     if (category) where.categoryId = category;
 
-    // Search by name/description
     if (search) {
       where[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
@@ -36,37 +44,25 @@ router.get('/', async (req, res, next) => {
       ];
     }
 
-    // Price range filter
     if (minPrice || maxPrice) {
       where.price = {};
       if (minPrice) where.price[Op.gte] = parseFloat(minPrice);
       if (maxPrice) where.price[Op.lte] = parseFloat(maxPrice);
     }
 
-    // Featured products only
     if (featured === 'true') where.is_featured = true;
 
-    // Availability filter
     where.availability = { [Op.ne]: 'discontinued' };
 
-    // Sorting
     const order = [];
     switch (sort) {
-      case 'price_asc':
-        order.push(['price', 'ASC']);
-        break;
-      case 'price_desc':
-        order.push(['price', 'DESC']);
-        break;
-      case 'rating':
-        order.push(['rating', 'DESC']);
-        break;
+      case 'price_asc':  order.push(['price', 'ASC']);     break;
+      case 'price_desc': order.push(['price', 'DESC']);    break;
+      case 'rating':     order.push(['rating', 'DESC']);   break;
       case 'newest':
-      default:
-        order.push(['createdAt', 'DESC']);
+      default:           order.push(['createdAt', 'DESC']);
     }
 
-    // Pagination
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     const { count, rows } = await Product.findAndCountAll({
@@ -105,10 +101,7 @@ router.get('/featured/all', async (req, res, next) => {
       limit: 8
     });
 
-    res.json({
-      success: true,
-      products
-    });
+    res.json({ success: true, products });
   } catch (error) {
     next(error);
   }
@@ -133,17 +126,15 @@ router.get('/:id', async (req, res, next) => {
       return next(new AppError('Product not found', 404));
     }
 
-    res.json({
-      success: true,
-      product
-    });
+    res.json({ success: true, product });
   } catch (error) {
     next(error);
   }
 });
 
 // ========== CREATE PRODUCT (ADMIN) ==========
-router.post('/', authMiddleware, adminMiddleware, uploadSingle('image'), async (req, res, next) => {
+// Changed: uploadSingle → uploadProductImages to support additional_images
+router.post('/', authMiddleware, adminMiddleware, uploadProductImages(), async (req, res, next) => {
   try {
     const { 
       name, 
@@ -157,50 +148,44 @@ router.post('/', authMiddleware, adminMiddleware, uploadSingle('image'), async (
 
     // Validations
     if (!name || !price || !categoryId || stock === undefined) {
-      // Clean up uploaded file if validation fails
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.log('Error deleting file:', err);
-        });
-      }
+      if (req.files?.image?.[0])             deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+      if (req.files?.additional_images)      req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
       return next(new AppError('Please fill all required fields', 400));
     }
 
     if (parseFloat(price) <= 0) {
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.log('Error deleting file:', err);
-        });
-      }
+      if (req.files?.image?.[0])             deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+      if (req.files?.additional_images)      req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
       return next(new AppError('Price must be greater than 0', 400));
     }
 
-    // Check category exists
     const category = await Category.findByPk(categoryId);
     if (!category) {
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.log('Error deleting file:', err);
-        });
-      }
+      if (req.files?.image?.[0])             deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+      if (req.files?.additional_images)      req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
       return next(new AppError('Category not found', 404));
     }
 
-    // Build image_url from uploaded file
+    // Main image
     let image_url = null;
-    if (req.file) {
-      image_url = `/uploads/products/${req.file.filename}`;
+    if (req.files?.image?.[0]) {
+      image_url = `/uploads/products/${req.files.image[0].filename}`;
     }
 
-    // Create product
+    // Additional images → save as JSON array of paths
+    let additional_images = [];
+    if (req.files?.additional_images) {
+      additional_images = req.files.additional_images.map(f => `/uploads/products/${f.filename}`);
+    }
+
     const product = await Product.create({
       name,
       description,
       short_description,
       price: parseFloat(price),
       categoryId,
-      image_url: image_url,
-      additional_images: [],
+      image_url,
+      additional_images,   // saved as JSON array in DB
       stock: parseInt(stock),
       is_featured: is_featured === 'true' || is_featured === true,
       availability: parseInt(stock) > 0 ? 'in_stock' : 'out_of_stock'
@@ -212,54 +197,72 @@ router.post('/', authMiddleware, adminMiddleware, uploadSingle('image'), async (
       product
     });
   } catch (error) {
-    // Clean up uploaded file if error occurs
-    if (req.file) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.log('Error deleting file:', err);
-      });
-    }
+    if (req.files?.image?.[0])        deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+    if (req.files?.additional_images) req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
     next(error);
   }
 });
 
 // ========== UPDATE PRODUCT (ADMIN) ==========
-router.put('/:id', authMiddleware, adminMiddleware, uploadSingle('image'), async (req, res, next) => {
+// Changed: uploadSingle → uploadProductImages to support additional_images
+router.put('/:id', authMiddleware, adminMiddleware, uploadProductImages(), async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, description, short_description, price, categoryId, stock, is_featured } = req.body;
+    const { name, description, short_description, price, categoryId, stock, is_featured, keep_additional_images } = req.body;
 
     const product = await Product.findByPk(id);
     if (!product) {
-      if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.log('Error deleting file:', err);
-        });
-      }
+      if (req.files?.image?.[0])             deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+      if (req.files?.additional_images)      req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
       return next(new AppError('Product not found', 404));
     }
 
-    // Update availability based on stock
     const updateData = {
-      name: name || product.name,
-      description: description || product.description,
+      name:              name              || product.name,
+      description:       description       || product.description,
       short_description: short_description || product.short_description,
-      price: price || product.price,
-      categoryId: categoryId || product.categoryId,
-      is_featured: is_featured !== undefined ? (is_featured === 'true' || is_featured === true) : product.is_featured
+      price:             price             || product.price,
+      categoryId:        categoryId        || product.categoryId,
+      is_featured: is_featured !== undefined
+        ? (is_featured === 'true' || is_featured === true)
+        : product.is_featured,
     };
 
-    // Handle image update
-    if (req.file) {
-      // Delete old image if it exists
-      if (product.image_url && product.image_url.startsWith('/uploads/products/')) {
-        const oldImagePath = path.join(__dirname, '../' + product.image_url);
-        fs.unlink(oldImagePath, (err) => {
-          if (err) console.log('Error deleting old image:', err);
-        });
-      }
-      updateData.image_url = `/uploads/products/${req.file.filename}`;
+    // ── Main image update ──
+    if (req.files?.image?.[0]) {
+      deleteFile(product.image_url); // delete old main image
+      updateData.image_url = `/uploads/products/${req.files.image[0].filename}`;
     }
 
+    // ── Additional images update ──
+    // keep_additional_images = JSON array of existing paths to keep (sent from frontend)
+    let keptImages = [];
+    if (keep_additional_images) {
+      try {
+        keptImages = JSON.parse(keep_additional_images);
+      } catch {
+        keptImages = [];
+      }
+    }
+
+    // Delete any old additional images that are NOT being kept
+    const oldAdditional = Array.isArray(product.additional_images) ? product.additional_images : [];
+    oldAdditional.forEach((imgPath) => {
+      if (!keptImages.includes(imgPath)) {
+        deleteFile(imgPath);
+      }
+    });
+
+    // New uploaded additional images
+    let newAdditionalImages = [];
+    if (req.files?.additional_images) {
+      newAdditionalImages = req.files.additional_images.map(f => `/uploads/products/${f.filename}`);
+    }
+
+    // Merge: kept existing + newly uploaded (max 4 total)
+    updateData.additional_images = [...keptImages, ...newAdditionalImages].slice(0, 3);
+
+    // ── Stock / availability ──
     if (stock !== undefined) {
       updateData.stock = parseInt(stock);
       updateData.availability = parseInt(stock) > 0 ? 'in_stock' : 'out_of_stock';
@@ -273,11 +276,8 @@ router.put('/:id', authMiddleware, adminMiddleware, uploadSingle('image'), async
       product
     });
   } catch (error) {
-    if (req.file) {
-      fs.unlink(req.file.path, (err) => {
-        if (err) console.log('Error deleting file:', err);
-      });
-    }
+    if (req.files?.image?.[0])        deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+    if (req.files?.additional_images) req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
     next(error);
   }
 });
@@ -291,20 +291,16 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res, next) =>
       return next(new AppError('Product not found', 404));
     }
 
-    // Delete product image if it exists
-    if (product.image_url && product.image_url.startsWith('/uploads/products/')) {
-      const imagePath = path.join(__dirname, '../' + product.image_url);
-      fs.unlink(imagePath, (err) => {
-        if (err) console.log('Error deleting image file:', err);
-      });
-    }
+    // Delete main image
+    deleteFile(product.image_url);
+
+    // Delete all additional images
+    const additional = Array.isArray(product.additional_images) ? product.additional_images : [];
+    additional.forEach((imgPath) => deleteFile(imgPath));
 
     await product.destroy();
 
-    res.json({
-      success: true,
-      message: 'Product deleted successfully'
-    });
+    res.json({ success: true, message: 'Product deleted successfully' });
   } catch (error) {
     if (error.name === 'SequelizeForeignKeyConstraintError') {
       return next(new AppError('Cannot delete product with existing orders', 400));

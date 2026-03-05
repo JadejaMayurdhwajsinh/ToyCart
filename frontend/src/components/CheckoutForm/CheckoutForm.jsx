@@ -75,18 +75,13 @@ function CheckoutForm() {
             setSuccess("");
 
             const payload = {
-                shipping_address: {
-                    firstName: form.firstName,
-                    lastName: form.lastName,
-                    company: form.company,
-                    address: form.address,
-                    suburb: form.suburb,
-                    country: form.country,
-                    state: form.state,
-                    postcode: form.postcode,
-                    phone: form.phone,
-                    email: form.email,
-                },
+                delivery_address: `${form.firstName} ${form.lastName}, ${form.address}, ${form.suburb}, ${form.company}`.trim(),
+                city: form.suburb,
+                state: form.state,
+                zipcode: form.postcode,
+                phone: form.phone,
+                payment_method: "cash_on_delivery",
+                special_notes: "",
             };
 
             const data = await APIService.placeOrder(payload, token);
@@ -203,7 +198,12 @@ function CheckoutForm() {
                         {cart?.items?.map((item) => (
                             <div key={item.id} className="order-item">
                                 {item.Product?.image_url && (
-                                    <img src={item.Product.image_url} alt={item.Product.name} />
+                                    <img
+                                        src={item.Product.image_url.startsWith("/uploads")
+                                            ? `http://localhost:5000${item.Product.image_url}`
+                                            : item.Product.image_url}
+                                        alt={item.Product.name}
+                                    />
                                 )}
                                 <div className="item-details">
                                     <p className="item-name">{item.Product?.name}</p>

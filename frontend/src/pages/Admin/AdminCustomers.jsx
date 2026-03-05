@@ -3,16 +3,21 @@ import "./Admin.css";
 import APIService from "../../services/api";
 
 const statusColors = {
-  delivered: "#22c55e", processing: "#f59e0b",
-  shipped: "#3b82f6", pending: "#94a3b8", cancelled: "#ef4444",
+  pending:    "#94a3b8",
+  confirmed:  "#8b5cf6",
+  processing: "#f59e0b",
+  shipped:    "#3b82f6",
+  delivered:  "#22c55e",
+  cancelled:  "#ef4444",
 };
 
 const AdminCustomers = () => {
-  const [search, setSearch] = useState("");
-  const [customers, setCustomers] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [search,        setSearch]        = useState("");
+  const [customers,     setCustomers]     = useState([]);
+  const [selected,      setSelected]      = useState(null);
+  const [loading,       setLoading]       = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [error,         setError]         = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
@@ -24,12 +29,15 @@ const AdminCustomers = () => {
       const params = {};
       if (search) params.search = search;
       const data = await APIService.getAdminCustomers(params, token);
+      // List endpoint doesn't return orders/spent — show — until detail is opened
       const list = (data.customers || []).map((c) => ({
-        id: c.id,
-        name: c.name,
-        email: c.email,
-        phone: c.phone || "",
-        joinDate: new Date(c.createdAt).toISOString().slice(0, 10),
+        id:          c.id,
+        name:        c.name,
+        email:       c.email,
+        phone:       c.phone || "—",
+        joinDate:    new Date(c.createdAt).toISOString().slice(0, 10),
+        totalOrders: null, // loaded on demand via detail endpoint
+        totalSpent:  null,
       }));
       setCustomers(list);
     } catch (err) {
@@ -52,27 +60,45 @@ const AdminCustomers = () => {
 
   const openCustomer = async (customer) => {
     try {
+      setDetailLoading(true);
       setError("");
+      setSelected({ ...customer, orders: [], totalOrders: 0, totalSpend: 0 }); // open modal immediately
+
       const data = await APIService.getAdminCustomerDetail(customer.id, token);
+
       const orders = (data.orders || []).map((o) => ({
-        id: o.id,
-        date: new Date(o.createdAt).toISOString().slice(0, 10),
+        id:     o.id,
+        number: o.order_number || `#${o.id}`,
+        date:   new Date(o.createdAt).toISOString().slice(0, 10),
         amount: Number(o.total_amount || 0),
         status: o.status,
       }));
 
+      const totalSpent = data.totalSpent || orders.reduce((s, o) => s + o.amount, 0);
+
       setSelected({
-        id: data.customer.id,
-        name: data.customer.name,
-        email: data.customer.email,
-        phone: data.customer.phone || "",
-        joinDate: new Date(data.customer.createdAt).toISOString().slice(0, 10),
+        id:          data.customer.id,
+        name:        data.customer.name,
+        email:       data.customer.email,
+        phone:       data.customer.phone || "—",
+        joinDate:    new Date(data.customer.createdAt).toISOString().slice(0, 10),
         totalOrders: data.totalOrders || orders.length,
-        totalSpend: data.totalSpent || 0,
+        totalSpend:  totalSpent,
         orders,
       });
+
+      // Also update the table row with real counts
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.id === customer.id
+            ? { ...c, totalOrders: data.totalOrders || orders.length, totalSpent: totalSpent }
+            : c
+        )
+      );
     } catch (err) {
       setError("Unable to load customer details.");
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -127,36 +153,35 @@ const AdminCustomers = () => {
               <tr key={customer.id}>
                 <td>
                   <div className="customer-cell">
-                    <div className="customer-avatar">
-                      {customer.name.charAt(0)}
-                    </div>
+                    <div className="customer-avatar">{customer.name.charAt(0)}</div>
                     <div>
                       <div>{customer.name}</div>
                       <div className="sub-text">{customer.email}</div>
                     </div>
                   </div>
                 </td>
-                <td>{customer.phone}</td>
+                <td>{customer.phone ?? "-"}</td>
                 <td>{customer.joinDate}</td>
-                <td>—</td>
-                <td>—</td>
+                <td>{customer.totalOrders ?? "—"}</td>
+                <td>{customer.totalSpent != null ? `₹${Number(customer.totalSpent).toLocaleString()}` : "—"}</td>
                 <td>
-                  <button className="admin-btn-edit" onClick={() => openCustomer(customer)}>
-                    View History
-                  </button>
-                  <button 
-                    className="admin-btn-delete" 
-                    onClick={() => setDeleteConfirm(customer.id)}
-                    style={{ marginLeft: "8px" }}
-                  >
-                    Delete
-                  </button>
+                  <div className="action-btns">
+                    <button className="admin-btn-edit" onClick={() => openCustomer(customer)}>
+                      View History
+                    </button>
+                    <button
+                      className="admin-btn-delete"
+                      onClick={() => setDeleteConfirm(customer.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div className="empty-state">No customers found.</div>}
+        {filtered.length === 0 && !loading && <div className="empty-state">No customers found.</div>}
       </div>
 
       {/* Customer Detail Modal */}
@@ -173,7 +198,7 @@ const AdminCustomers = () => {
               <div>
                 <h3>{selected.name}</h3>
                 <p className="sub-text">{selected.email}</p>
-                <p className="sub-text">{selected.phone}</p>
+                {selected.phone !== "—" && <p className="sub-text">📞 {selected.phone}</p>}
                 <p className="sub-text">Member since {selected.joinDate}</p>
               </div>
             </div>
@@ -184,21 +209,28 @@ const AdminCustomers = () => {
                 <div className="stat-label">Total Orders</div>
               </div>
               <div className="cust-stat">
-                <div className="stat-value">₹{selected.totalSpend.toLocaleString()}</div>
+                <div className="stat-value">₹{Number(selected.totalSpend).toLocaleString()}</div>
                 <div className="stat-label">Total Spent</div>
               </div>
             </div>
 
             <div className="order-items">
               <h4>Order History</h4>
-              {selected.orders.map((order) => (
+              {detailLoading && <p style={{ padding: "12px", color: "var(--text-muted)" }}>Loading orders...</p>}
+              {!detailLoading && selected.orders.length === 0 && (
+                <p style={{ padding: "12px", color: "var(--text-muted)" }}>No orders yet.</p>
+              )}
+              {!detailLoading && selected.orders.map((order) => (
                 <div key={order.id} className="order-item-row">
-                  <span className="order-id">{order.id}</span>
+                  <span className="order-id">{order.number}</span>
                   <span>{order.date}</span>
                   <span>₹{order.amount.toLocaleString()}</span>
                   <span
                     className="status-badge"
-                    style={{ background: statusColors[order.status] + "22", color: statusColors[order.status] }}
+                    style={{
+                      background: (statusColors[order.status] || "#94a3b8") + "22",
+                      color: statusColors[order.status] || "#94a3b8",
+                    }}
                   >
                     {order.status}
                   </span>
@@ -206,12 +238,9 @@ const AdminCustomers = () => {
               ))}
             </div>
 
-            <div className="modal-actions" style={{ marginTop: "20px" }}>
+            <div className="modal-actions" style={{ padding: "16px 26px 20px" }}>
               <button className="admin-btn-secondary" onClick={() => setSelected(null)}>Close</button>
-              <button 
-                className="admin-btn-delete" 
-                onClick={() => setDeleteConfirm(selected.id)}
-              >
+              <button className="admin-btn-delete" onClick={() => setDeleteConfirm(selected.id)}>
                 Delete Customer
               </button>
             </div>
@@ -223,26 +252,28 @@ const AdminCustomers = () => {
       {deleteConfirm && (
         <div className="admin-modal-overlay" onClick={() => !loading && setDeleteConfirm(null)}>
           <div className="admin-modal confirm-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Delete Customer?</h3>
-            <p>This will permanently remove the customer account. This action cannot be undone.</p>
-            <p style={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
-              Note: Customer can only be deleted if they have no active orders (pending, processing, or shipped).
-            </p>
-            <div className="modal-actions">
-              <button 
-                className="admin-btn-secondary" 
-                onClick={() => setDeleteConfirm(null)}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button 
-                className="admin-btn-delete" 
-                onClick={handleDeleteCustomer}
-                disabled={loading}
-              >
-                {loading ? "Deleting..." : "Delete"}
-              </button>
+            <div className="admin-form">
+              <h3>Delete Customer?</h3>
+              <p>This will permanently remove the customer account. This action cannot be undone.</p>
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "6px" }}>
+                Note: Customers with pending, processing or shipped orders cannot be deleted.
+              </p>
+              <div className="modal-actions">
+                <button
+                  className="admin-btn-secondary"
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="admin-btn-delete"
+                  onClick={handleDeleteCustomer}
+                  disabled={loading}
+                >
+                  {loading ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

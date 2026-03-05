@@ -81,10 +81,12 @@ function Pdp() {
         return {
             title: product.name,
             price: product.price,
-            mainImage: product.image_url || toy2img,
-            images: Array.isArray(product.additional_images) && product.additional_images.length
+            // FIXED
+            mainImage: product.image_url || null,
+            // FIXED — no fallback to local imports
+            images: Array.isArray(product.additional_images)
                 ? product.additional_images
-                : [toy2img4, toy2img3, toy2img2, toy2img1],
+                : [],
             ratingImage: review4star,
             description: product.description,
             coinIcon: coin,
@@ -254,7 +256,7 @@ function Pdp() {
 
                         </div>
                     </div> */}
-                    <ProductDescription product={productData} />
+                    <ProductDescription product={productData} productId={product?.id} />
                 </div>
                 <FeaturedItem items={featuredItems} />
             </section>

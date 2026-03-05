@@ -253,7 +253,7 @@
   overflow: hidden;
   box-shadow: 4px 0 24px rgba(37,95,131,0.18);
   background-image:
-    radial-gradient(ellipse at 80% 0%, rgba(247,255,180,0.14) 0%, transparent 60%), 
+    radial-gradient(ellipse at 80% 0%, rgba(247,255,180,0.14) 0%, transparent 60%),
     radial-gradient(ellipse at 20% 100%, rgba(237,194,201,0.12) 0%, transparent 50%);
 }
 
@@ -264,25 +264,29 @@
   padding: 0 20px 22px;
   border-bottom: 1px solid rgba(255,255,255,0.12);
   margin-bottom: 18px;
+  white-space: nowrap;
 }
 
-.toycart {
-  width: 100px;
-  height: 100px;
+.toycart{
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   flex-shrink: 0;
-  /* subtle glow so logo pops on the ocean sidebar */
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.25));
   transition: transform 0.2s;
-  transform: scale(2.5) 
+  transform: scale(3.2);
 }
 
 .toycart:hover {
-  transform: scale(2.9);
+  transform: scale(3.9);
 }
 
-/* Slightly smaller when sidebar is collapsed */
-.sidebar-closed .toycartlogo {
+.sidebar-closed .toycart-logo {
+  width: 38px;
+  height: 38px;
+}
+
+.sidebar-closed .toycart {
   width: 38px;
   height: 38px;
 }
@@ -302,7 +306,7 @@
   padding: 12px 14px;
   border-radius: 12px;
   text-decoration: none;
-  color: rgba(255,255,255,0.62);
+  color: rgba(255,255,255,0.65);
   font-size: 14px;
   font-weight: 700;
   transition: all 0.18s;
@@ -1041,6 +1045,364 @@
 .admin-dashboard { }
 .admin-page { }
 
+/* ═══════════════════════════════════════════════════════════
+   IMAGE UPLOAD
+   ═══════════════════════════════════════════════════════════ */
+
+.image-upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Empty state — click to upload */
+.image-drop-zone {
+  border: 2.5px dashed var(--lavender-dark);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.image-drop-zone:hover {
+  border-color: var(--ocean);
+  background: var(--ocean-dim);
+}
+
+.upload-icon  { font-size: 32px; }
+.upload-label { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; color: var(--ocean); }
+.upload-hint  { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+
+/* Preview */
+.image-preview-wrap {
+  position: relative;
+  display: inline-block;
+  width: fit-content;
+}
+
+.image-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  display: block;
+}
+
+.image-remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: transform 0.15s;
+}
+
+.image-remove-btn:hover { transform: scale(1.15); }
+
+.image-change-btn {
+  background: var(--lavender);
+  border: 1.5px solid var(--lavender-dark);
+  color: var(--lavender-text);
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 0.18s;
+}
+
+.image-change-btn:hover { background: var(--lavender-dark); color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN IMAGE + GALLERY UPLOAD ROW
+   ═══════════════════════════════════════════════════════════ */
+
+/* Outer row: main image box LEFT, gallery slots RIGHT */
+.image-upload-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* ── Main image box ── */
+.main-image-box {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: 2.5px dashed var(--lavender-dark);
+  background: var(--bg-elevated);
+  overflow: visible;
+}
+
+.main-image-preview {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+/* Drop zone label (clickable empty state) */
+.image-drop-zone {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background 0.18s;
+}
+
+.image-drop-zone:hover { background: var(--ocean-dim); }
+
+.upload-icon  { font-size: 26px; }
+.upload-label { font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800; color: var(--ocean); text-align: center; }
+
+/* ── Gallery section (right side) ── */
+.gallery-slots {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gallery-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ocean);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* 4 square slots in a row */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.gallery-slot {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: visible;
+}
+
+/* Filled slot — image */
+.gallery-slot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  display: block;
+}
+
+/* Empty slot — click to add */
+.gallery-slot-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 2.5px dashed var(--lavender-dark);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.gallery-slot-empty:hover {
+  border-color: var(--ocean);
+  background: var(--ocean-dim);
+}
+
+.gallery-plus {
+  font-size: 22px;
+  color: var(--lavender-dark);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gallery-slot-empty:hover .gallery-plus { color: var(--ocean); }
+
+.upload-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Remove button (shared by main + gallery) ── */
+.image-remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  transition: transform 0.15s;
+  z-index: 2;
+}
+
+.image-remove-btn:hover { transform: scale(1.18); }
+
+/* ── Checkbox label ── */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ocean);
+  cursor: pointer;
+}
+
+/* ── Admin header actions (multiple buttons in header) ── */
+.admin-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .admin-modal::-webkit-scrollbar { width: 6px; }
 .admin-modal::-webkit-scrollbar-track { background: var(--bg-elevated); }
 .admin-modal::-webkit-scrollbar-thumb { background: var(--lavender-dark); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════════════════════
+   ADDITIONAL IMAGES GALLERY (additional_images JSON column)
+   ═══════════════════════════════════════════════════════════ */
+
+/* 4 equal slots in a row */
+.gallery-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.gallery-slot-4 {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: visible;
+}
+
+/* Filled — image */
+.gallery-slot-img-4 {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  display: block;
+}
+
+/* Empty — click to upload */
+.gallery-slot-empty-4 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed var(--lavender-dark);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  transition: all 0.18s;
+  gap: 4px;
+  min-height: 80px;
+}
+
+.gallery-slot-empty-4:hover {
+  border-color: var(--ocean);
+  background: var(--ocean-dim);
+}
+
+.gallery-plus-icon {
+  font-size: 20px;
+  color: var(--lavender-dark);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gallery-slot-empty-4:hover .gallery-plus-icon { color: var(--ocean); }
+
+.gallery-slot-num {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Remove button */
+.gallery-remove-btn {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: transform 0.15s;
+  z-index: 2;
+}
+
+.gallery-remove-btn:hover { transform: scale(1.2); }
+
+/* Admin header actions */
+.admin-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}

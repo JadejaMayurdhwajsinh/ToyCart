@@ -14,7 +14,6 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Create unique filename with timestamp
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
     const name = path.basename(file.originalname, ext);
@@ -25,7 +24,6 @@ const storage = multer.diskStorage({
 // File filter - only allow images
 const fileFilter = (req, file, cb) => {
   const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
-  
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -37,35 +35,47 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-// Middleware to handle upload errors
+// ── Existing: single image upload (UNCHANGED) ──
 const uploadSingle = (fieldName = 'image') => {
   return (req, res, next) => {
     upload.single(fieldName)(req, res, (err) => {
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({
-            success: false,
-            message: 'File is too large. Maximum size is 5MB'
-          });
+          return res.status(400).json({ success: false, message: 'File is too large. Maximum size is 5MB' });
         }
-        return res.status(400).json({
-          success: false,
-          message: 'File upload failed: ' + err.message
-        });
+        return res.status(400).json({ success: false, message: 'File upload failed: ' + err.message });
       } else if (err) {
-        return res.status(400).json({
-          success: false,
-          message: 'File upload failed: ' + err.message
-        });
+        return res.status(400).json({ success: false, message: 'File upload failed: ' + err.message });
       }
       next();
     });
   };
 };
 
-module.exports = { uploadSingle };
+// ── NEW: handles main image + up to 3 additional_images ──
+const uploadProductImages = () => {
+  return (req, res, next) => {
+    upload.fields([
+      { name: 'image',             maxCount: 1 },
+      { name: 'additional_images', maxCount: 3 },
+    ])(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ success: false, message: 'File is too large. Maximum size is 5MB' });
+        }
+        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+          return res.status(400).json({ success: false, message: 'Maximum 3 additional images allowed' });
+        }
+        return res.status(400).json({ success: false, message: 'File upload failed: ' + err.message });
+      } else if (err) {
+        return res.status(400).json({ success: false, message: 'File upload failed: ' + err.message });
+      }
+      next();
+    });
+  };
+};
+
+module.exports = { uploadSingle, uploadProductImages };

@@ -20,13 +20,16 @@ function ToyBox() {
             setLoading(true);
             setError("");
             const data = await APIService.getCart(token);
+            console.log(data.items);
             // API returns items with nested Product
             const mapped = (data.items || []).map((item) => ({
                 id: item.id,
                 cartId: item.id,
                 productId: item.productId,
                 name: item.Product?.name,
-                image: item.Product?.image_url,
+                image: item.Product?.image_url
+                    ? `http://localhost:5000${item.Product.image_url}`
+                    : null,
                 price: item.Product?.price,
                 quantity: item.quantity,
             }));
