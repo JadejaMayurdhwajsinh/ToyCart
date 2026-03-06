@@ -509,6 +509,21 @@ class APIService {
     return data;
   }
 
+  static async forgotPassword(email) {
+  return handleResponse(await fetch(`${API_BASE_URL}/users/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  }));
+}
+
+static async resetPassword(payload) {
+  return handleResponse(await fetch(`${API_BASE_URL}/users/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }));
+}
 
 }
 

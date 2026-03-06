@@ -34,6 +34,8 @@ function Alltoys() {
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [filters, setFilters] = useState({
     search: "", category: "", minPrice: "", maxPrice: "", rating: "", availability: "",
   });
@@ -55,12 +57,12 @@ function Alltoys() {
       .catch(() => { });
   }, []);
 
-  useEffect(() => { fetchProducts(); }, [applied, sort]);
+useEffect(() => { setPage(1); fetchProducts(1, false); }, [applied, sort]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (currentPage = 1, append = false) => {
     try {
       setLoading(true); setError("");
-      const params = {};
+      const params = { page: currentPage, limit: 12 };
       if (applied.search) params.search = applied.search;
       if (applied.category) params.category = applied.category;
       if (applied.minPrice) params.minPrice = applied.minPrice;
@@ -70,8 +72,10 @@ function Alltoys() {
       if (sort) params.sort = sort;
       const data = await APIService.getProducts(params);
       const list = Array.isArray(data) ? data : data.products || [];
-      setProducts(list);
-      setTotalCount(list.length);
+      const total = Array.isArray(data) ? list.length : data.pagination?.total || list.length;
+      setProducts((prev) => append ? [...prev, ...list] : list);
+      setTotalCount(total);
+      setHasMore(currentPage * 12 < total);
     } catch { setError("Unable to load toys right now."); }
     finally { setLoading(false); }
   };
@@ -92,6 +96,12 @@ function Alltoys() {
     setFilters(empty); setApplied(empty); setSort("");
     navigate("/Alltoys", { replace: true });
   };
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProducts(nextPage, true);
+};
 
   const activeFilterCount = Object.values(applied).filter(Boolean).length;
   const currentSortLabel = sort ? SORT_OPTIONS.find((o) => o.value === sort)?.label : "Sort by";
@@ -286,6 +296,21 @@ function Alltoys() {
           />
         ))}
       </div>
+
+      {/* Load More */}
+      {hasMore && !loading && (
+        <div className="at-load-more-wrap">
+          <button className="at-load-more-btn" onClick={handleLoadMore}>
+            Load More Toys 🧸
+          </button>
+        </div>
+      )}
+      {loading && page > 1 && (
+        <div className="at-load-more-wrap">
+          <p className="at-loading">Loading more...</p>
+        </div>
+      )}
+
     </section>
 
     <section className="fan-section">

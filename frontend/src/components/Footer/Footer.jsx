@@ -6,6 +6,7 @@ import stackIcon from "../../assets/Stack Toy.svg";
 import flamingoImage from "../../../public/images/Flamingo.png";
 import instgramIcon from "../../assets/instagram.svg";
 import tiktokIcon from "../../assets/tiktok.svg";
+import { Link } from "react-router-dom";
 import facebookIcon from "../../assets/facebook.svg";
 import toycartlogo from "../../../public/images/toycart-logo.png";
 
@@ -44,7 +45,7 @@ function Footer() {
                         <p>We support creative, developmental play</p>
                         <a href="#">Blog & News</a>
                     </div>
-                </div>   
+                </div>
             </div>
 
             <div className="footer-main">
@@ -108,10 +109,10 @@ function Footer() {
             </div>
 
             <div className="footer-bottom">
-                <a href="#">Legal policies</a>
-                <a href="#">Privacy policy</a>
-                <a href="#">Modern slavery policy</a>
-                <a href="#">Terms & Conditions</a>
+                <Link to="/policy/legal-policies">Legal policies</Link>
+                <Link to="/policy/privacy-policy">Privacy policy</Link>
+                <Link to="/policy/modern-slavery-policy">Modern slavery policy</Link>
+                <Link to="/policy/terms-and-conditions">Terms & Conditions</Link>
             </div>
         </footer>
     );

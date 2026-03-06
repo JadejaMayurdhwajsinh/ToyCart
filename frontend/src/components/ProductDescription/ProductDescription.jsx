@@ -15,21 +15,9 @@ const resolveImage = (src) => {
 };
 
 function ProductDescription({ product, productId }) {
-  const {
-    title,
-    price,
-    mainImage,
-    images,
-    ratingImage,
-    description,
-    details,
-    coinIcon,
-    lineIcon,
-  } = product;
+  const { title, price, description, details, coinIcon, lineIcon, mainImage, images } = product;
 
-  // Full gallery: main image first, then additional_images
   const allImages = [mainImage, ...(Array.isArray(images) ? images : [])].filter(Boolean);
-
   const [activeIndex, setActiveIndex] = useState(0);
 
   const goPrev = () => setActiveIndex((i) => (i === 0 ? allImages.length - 1 : i - 1));
@@ -46,7 +34,6 @@ function ProductDescription({ product, productId }) {
       await APIService.addToCart({ productId: pid, quantity: 1 }, token);
       addToCart({ id: pid, ProductName: title, Price: price, ProductImage: mainImage });
     } catch (err) {
-      console.error("Error adding to cart:", err);
       window.alert(err.message || "Unable to add to cart. Please try again.");
     }
   };
@@ -55,12 +42,14 @@ function ProductDescription({ product, productId }) {
     <div className="product-description">
 
       {/* LEFT — IMAGE SWIPER */}
-     <div className="product-description__images">
-        <div className="pdp-image-wrapper">
+      <div className="product-description__images">
         <div className="pdp-slider">
+
           {/* Prev arrow */}
           {allImages.length > 1 && (
-            <button className="pdp-slider__arrow pdp-slider__arrow--prev" onClick={goPrev}><img src={navprev} alt="navprev" className="nav-prev" /></button>
+            <button className="pdp-slider__arrow pdp-slider__arrow--prev" onClick={goPrev}>
+              <img src={navprev} alt="prev" />
+            </button>
           )}
 
           {/* Main image */}
@@ -73,7 +62,9 @@ function ProductDescription({ product, productId }) {
 
           {/* Next arrow */}
           {allImages.length > 1 && (
-            <button className="pdp-slider__arrow pdp-slider__arrow--next" onClick={goNext}><img src={navnext} alt="navnext" className="nav-next" /></button>
+            <button className="pdp-slider__arrow pdp-slider__arrow--next" onClick={goNext}>
+              <img src={navnext} alt="next" />
+            </button>
           )}
 
           {/* Dots */}
@@ -88,9 +79,10 @@ function ProductDescription({ product, productId }) {
               ))}
             </div>
           )}
-        </div>
 
-        {/* Thumbnails */}
+          </div>{/* end pdp-slider */}
+
+        {/* Thumbnails — OUTSIDE the white box */}
         {allImages.length > 1 && (
           <div className="product-description__images-bottom">
             {allImages.map((img, index) => (
@@ -105,10 +97,9 @@ function ProductDescription({ product, productId }) {
             ))}
           </div>
         )}
-        </div>{/* end pdp-image-wrapper */}
       </div>
 
-      {/* RIGHT — CONTENT (unchanged) */}
+      {/* RIGHT — CONTENT */}
       <div className="product-description__content">
         <div>
           <h2 className="product-description__content-title">{title}</h2>

@@ -5,6 +5,8 @@ const { User } = require('../config/db');
 const { sequelize } = require('../config/db');
 const { authMiddleware } = require('../middleware/auth');
 const { AppError } = require('../utils/errorHandler');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const { uploadSingle } = require('../middleware/upload');
 
 const router = express.Router();
@@ -221,5 +223,109 @@ router.put('/change-password', authMiddleware, async (req, res, next) => {
     next(error);
   }
 });
+
+// ── Email transporter ──
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// ========== FORGOT PASSWORD ==========
+router.post('/forgot-password', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return next(new AppError('Email is required', 400));
+
+    const user = await User.findOne({ where: { email } });
+    // Always return success even if user not found (security)
+    if (!user) {
+      return res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
+    }
+
+    // Generate token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await user.update({ resetToken, resetTokenExpiry });
+
+    // Build reset URL
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+
+    // Send email
+    await transporter.sendMail({
+      from: `"ToyCart" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: '🧸 Reset your ToyCart password',
+      html: `
+        <div style="font-family: Poppins, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8f5ff; border-radius: 16px;">
+          <h2 style="color: #255F83; font-size: 24px; margin-bottom: 8px;">Reset your password</h2>
+          <p style="color: #255F83; font-size: 15px; margin-bottom: 24px;">
+            Hi ${user.name}, click the button below to reset your ToyCart password. This link expires in 1 hour.
+          </p>
+          <a href="${resetUrl}" style="display: inline-block; background: #255F83; color: #F7FFB4; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 15px;">
+            Reset Password
+          </a>
+          <p style="color: #7a8aaa; font-size: 13px; margin-top: 24px;">
+            If you didn't request this, you can safely ignore this email.
+          </p>
+        </div>
+      `,
+    });
+
+    res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ========== RESET PASSWORD ==========
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    const { token, newPassword, confirmPassword } = req.body;
+
+    if (!token || !newPassword || !confirmPassword) {
+      return next(new AppError('All fields are required', 400));
+    }
+
+    if (newPassword !== confirmPassword) {
+      return next(new AppError('Passwords do not match', 400));
+    }
+
+    if (newPassword.length < 6) {
+      return next(new AppError('Password must be at least 6 characters', 400));
+    }
+
+    // Find user with valid token
+    const user = await User.findOne({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: { [Op.gt]: new Date() }, // token not expired
+      },
+    });
+
+    if (!user) {
+      return next(new AppError('Invalid or expired reset link. Please request a new one.', 400));
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password and clear token
+    await user.update({
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpiry: null,
+    });
+
+    res.json({ success: true, message: 'Password reset successfully. You can now login.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 module.exports = router;

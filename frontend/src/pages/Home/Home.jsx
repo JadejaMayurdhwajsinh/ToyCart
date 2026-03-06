@@ -49,8 +49,8 @@ function Home() {
   };
 
   const scrollToHero = () => {
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   useEffect(() => {
     const fetchFeatured = async () => {
@@ -156,7 +156,7 @@ function Home() {
 
         <div className="workflow-content">
           <div className="workflow-phone">
-            <img src={toycartlogo} alt="logo" className="toycartlogo"/>
+            <img src={toycartlogo} alt="logo" className="toycartlogo" />
             <img
               src={workflowPhone}
               alt="Phone mockup"
@@ -259,6 +259,8 @@ function Home() {
               ProductImage={product.image_url}
               ProductName={product.name}
               Price={product.price}
+              rating={product.rating}
+              reviewCount={product.number_of_reviews}
             />
           ))}
         </div>

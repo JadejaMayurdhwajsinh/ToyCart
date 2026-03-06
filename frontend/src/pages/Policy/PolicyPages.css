@@ -1,0 +1,159 @@
+/* ── Hero ── */
+.policy-hero {
+    background: #F7FFB4;
+    padding: 60px 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.policy-emoji { font-size: 48px; }
+
+.policy-title {
+    font-family: 'FatFrank', 'Franklin Gothic Heavy', sans-serif;
+    font-size: 52px;
+    color: #255F83;
+    margin: 0;
+}
+
+.policy-last-updated {
+    color: #7a8aaa;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* ── Layout ── */
+.policy-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 48px;
+    padding: 60px 120px;
+    background: #F2EBFF;
+    align-items: start;
+}
+
+/* ── Content ── */
+.policy-content {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.policy-section {
+    background: white;
+    border-radius: 16px;
+    padding: 28px 32px;
+    border: 2px solid #DECCFE;
+}
+
+.policy-section-heading {
+    font-family: 'FatFrank', 'Franklin Gothic Heavy', sans-serif;
+    font-size: 18px;
+    color: #255F83;
+    margin: 0 0 12px;
+}
+
+.policy-section-text {
+    color: #4a5568;
+    font-size: 15px;
+    line-height: 1.8;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* ── Sidebar ── */
+.policy-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 80px;
+}
+
+.policy-sidebar-card,
+.policy-contact-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    border: 2px solid #DECCFE;
+}
+
+.policy-sidebar-card h3,
+.policy-contact-card h3 {
+    font-family: 'FatFrank', 'Franklin Gothic Heavy', sans-serif;
+    font-size: 16px;
+    color: #255F83;
+    margin: 0 0 16px;
+}
+
+.policy-nav-link {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: #f8f5ff;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #255F83;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 8px;
+    transition: all 0.15s;
+}
+
+.policy-nav-link:last-child { margin-bottom: 0; }
+.policy-nav-link:hover { border-color: #DECCFE; background: #f0ebff; }
+.policy-nav-link--active { background: #255F83; color: #F7FFB4; border-color: #255F83; }
+
+.policy-contact-card p {
+    color: #7a8aaa;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.6;
+    margin: 0 0 16px;
+}
+
+.policy-contact-btn {
+    display: block;
+    background: #255F83;
+    color: #F7FFB4;
+    text-align: center;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: background 0.18s;
+    font-family: 'Poppins', sans-serif;
+}
+
+.policy-contact-btn:hover { background: #1b4763; }
+
+.policy-not-found {
+    text-align: center;
+    padding: 120px 20px;
+    color: #255F83;
+}
+
+.policy-not-found button {
+    background: #255F83;
+    color: #F7FFB4;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 32px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 16px;
+    font-family: 'Poppins', sans-serif;
+}
+
+@media (max-width: 1024px) {
+    .policy-container { grid-template-columns: 1fr; padding: 40px 24px; }
+    .policy-hero { padding: 40px 24px; }
+    .policy-title { font-size: 36px; }
+    .policy-sidebar { position: static; }
+}
