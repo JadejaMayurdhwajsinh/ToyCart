@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 import cartIcon from "../../assets/cart-icon.svg";
+import searchIcon from "../../assets/search-icon.svg";
 import { useCart } from "../../hooks/useCart";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import APIService from "../../services/api";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -15,9 +16,18 @@ function Navbar() {
     const token = typeof window !== "undefined" ? localStorage.getItem("customerToken") : null;
     const isLoggedIn = !!token;
 
-    const [userName, setUserName] = useState("");
-    const [userAvatar, setUserAvatar] = useState(null);
+    const [userName,     setUserName]     = useState("");
+    const [userAvatar,   setUserAvatar]   = useState(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+
+    // Search
+    const [searchOpen,  setSearchOpen]  = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [searching,   setSearching]   = useState(false);
+    const searchRef  = useRef(null);
+    const inputRef   = useRef(null);
+    const debounceRef = useRef(null);
 
     useEffect(() => {
         if (!isLoggedIn) { setUserName(""); setUserAvatar(null); return; }
@@ -25,7 +35,8 @@ function Navbar() {
             APIService.getProfile(token)
                 .then((data) => {
                     setUserName(data?.user?.name || "User");
-                    setUserAvatar(data?.user?.avatar || null);
+                    const av = data?.user?.avatar;
+                    setUserAvatar(av ? (av.startsWith("http") ? av : `${API_BASE}${av}`) : null);
                 })
                 .catch(() => setUserName("User"));
         };
@@ -34,18 +45,70 @@ function Navbar() {
         return () => window.removeEventListener("profileUpdated", fetchProfile);
     }, [isLoggedIn, token]);
 
+    // Close search on outside click
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (searchRef.current && !searchRef.current.contains(e.target)) {
+                setSearchOpen(false);
+                setSearchResults([]);
+                setSearchQuery("");
+            }
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
+
+    // Focus input when search opens
+    useEffect(() => {
+        if (searchOpen) inputRef.current?.focus();
+    }, [searchOpen]);
+
+    const handleSearchInput = (e) => {
+        const q = e.target.value;
+        setSearchQuery(q);
+        clearTimeout(debounceRef.current);
+        if (!q.trim()) { setSearchResults([]); return; }
+        debounceRef.current = setTimeout(async () => {
+            try {
+                setSearching(true);
+                const data = await APIService.getProducts({ search: q, limit: 6 });
+                setSearchResults(Array.isArray(data) ? data : data.products || []);
+            } catch {
+                setSearchResults([]);
+            } finally {
+                setSearching(false);
+            }
+        }, 350);
+    };
+
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        if (!searchQuery.trim()) return;
+        navigate(`/Alltoys?search=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchOpen(false);
+        setSearchResults([]);
+        setSearchQuery("");
+    };
+
+    const handleResultClick = (id) => {
+        navigate(`/Pdp/${id}`);
+        setSearchOpen(false);
+        setSearchResults([]);
+        setSearchQuery("");
+    };
+
+    const getImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith("http")) return path;
+        return `${API_BASE}${path}`;
+    };
+
     const handleLogout = () => {
         localStorage.removeItem("customerToken");
-        setUserName("");
-        setUserAvatar(null);
-        setDropdownOpen(false);
+        setUserName(""); setUserAvatar(null); setDropdownOpen(false);
         navigate("/");
         window.location.reload();
     };
-
-    const avatarSrc = userAvatar
-        ? (userAvatar.startsWith("http") ? userAvatar : `${API_BASE}${userAvatar}`)
-        : null;
 
     return (
         <header className="navbar-wrapper">
@@ -81,6 +144,69 @@ function Navbar() {
 
                 {/* Right side actions */}
                 <div className="nav-right">
+
+                    {/* ── Search ── */}
+                    <div className={`nav-search ${searchOpen ? "nav-search--open" : ""}`} ref={searchRef}>
+                        <button
+                            className="icon-btn search-btn"
+                            onClick={() => setSearchOpen((p) => !p)}
+                            title="Search"
+                        >
+                            <img src={searchIcon} alt="Search" />
+                        </button>
+
+                        <form
+                            className={`nav-search-form ${searchOpen ? "nav-search-form--open" : ""}`}
+                            onSubmit={handleSearchSubmit}
+                        >
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                className="nav-search-input"
+                                placeholder="Search toys..."
+                                value={searchQuery}
+                                onChange={handleSearchInput}
+                            />
+                            {searchQuery && (
+                                <button type="button" className="nav-search-clear" onClick={() => { setSearchQuery(""); setSearchResults([]); inputRef.current?.focus(); }}>✕</button>
+                            )}
+                        </form>
+
+                        {/* Dropdown results */}
+                        {searchOpen && searchQuery && (
+                            <div className="nav-search-dropdown">
+                                {searching && (
+                                    <div className="nav-search-status">Searching...</div>
+                                )}
+                                {!searching && searchResults.length === 0 && (
+                                    <div className="nav-search-status">No results for "{searchQuery}"</div>
+                                )}
+                                {!searching && searchResults.map((p) => (
+                                    <div
+                                        key={p.id}
+                                        className="nav-search-result"
+                                        onClick={() => handleResultClick(p.id)}
+                                    >
+                                        {p.image_url ? (
+                                            <img src={getImageUrl(p.image_url)} alt={p.name} className="nav-search-result-img" />
+                                        ) : (
+                                            <div className="nav-search-result-placeholder">🧸</div>
+                                        )}
+                                        <div className="nav-search-result-info">
+                                            <p className="nav-search-result-name">{p.name}</p>
+                                            <p className="nav-search-result-price">₹{Number(p.price).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {!searching && searchResults.length > 0 && (
+                                    <button className="nav-search-see-all" onClick={handleSearchSubmit}>
+                                        See all results for "{searchQuery}"
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Cart */}
                     <button className="icon-btn cart-btn" onClick={() => navigate("/Order")} title="Cart">
                         <img src={cartIcon} alt="Cart" />
@@ -89,10 +215,9 @@ function Navbar() {
 
                     {isLoggedIn ? (
                         <div className="nav-user" onClick={() => setDropdownOpen((p) => !p)}>
-                            {/* Avatar: image or initials */}
                             <div className="nav-avatar" title={userName}>
-                                {avatarSrc ? (
-                                    <img src={avatarSrc} alt={userName} className="nav-avatar-img" />
+                                {userAvatar ? (
+                                    <img src={userAvatar} alt={userName} className="nav-avatar-img" />
                                 ) : (
                                     userName.charAt(0).toUpperCase() || "U"
                                 )}
@@ -104,8 +229,8 @@ function Navbar() {
                                 <div className="nav-dropdown" onClick={(e) => e.stopPropagation()}>
                                     <div className="nav-dropdown-header">
                                         <div className="nav-avatar large">
-                                            {avatarSrc ? (
-                                                <img src={avatarSrc} alt={userName} className="nav-avatar-img" />
+                                            {userAvatar ? (
+                                                <img src={userAvatar} alt={userName} className="nav-avatar-img" />
                                             ) : (
                                                 userName.charAt(0).toUpperCase()
                                             )}
@@ -115,21 +240,13 @@ function Navbar() {
                                         </div>
                                     </div>
                                     <hr className="nav-dropdown-divider" />
-                                    <button className="nav-dropdown-item" onClick={() => { navigate("/profile/edit"); setDropdownOpen(false); }}>
-                                        ✏️ Edit Profile
-                                    </button>
+                                    <button className="nav-dropdown-item" onClick={() => { navigate("/profile/edit"); setDropdownOpen(false); }}>✏️ Edit Profile</button>
                                     <hr className="nav-dropdown-divider" />
-                                    <button className="nav-dropdown-item" onClick={() => { navigate("/my-orders"); setDropdownOpen(false); }}>
-                                        📦 My Orders
-                                    </button>
+                                    <button className="nav-dropdown-item" onClick={() => { navigate("/my-orders"); setDropdownOpen(false); }}>📦 My Orders</button>
                                     <hr className="nav-dropdown-divider" />
-                                    <button className="nav-dropdown-item" onClick={() => { navigate("/wishlist"); setDropdownOpen(false); }}>
-                                        ♥ My Wishlist
-                                    </button>
+                                    <button className="nav-dropdown-item" onClick={() => { navigate("/wishlist"); setDropdownOpen(false); }}>♥ My Wishlist</button>
                                     <hr className="nav-dropdown-divider" />
-                                    <button className="nav-dropdown-item logout" onClick={handleLogout}>
-                                        🚪 Logout
-                                    </button>
+                                    <button className="nav-dropdown-item logout" onClick={handleLogout}>🚪 Logout</button>
                                 </div>
                             )}
                         </div>

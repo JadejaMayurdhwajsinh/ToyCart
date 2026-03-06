@@ -25,7 +25,6 @@ const OrderItem = require('./OrderItem')(sequelize);
 const Review = require('./Review')(sequelize);
 const WishList = require('./WishList')(sequelize);
 
-// Define Associations
 
 // User associations
 User.hasMany(Cart, {

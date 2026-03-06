@@ -55,8 +55,8 @@ function ProductDescription({ product, productId }) {
     <div className="product-description">
 
       {/* LEFT — IMAGE SWIPER */}
-      <div className="product-description__images">
-
+     <div className="product-description__images">
+        <div className="pdp-image-wrapper">
         <div className="pdp-slider">
           {/* Prev arrow */}
           {allImages.length > 1 && (
@@ -105,6 +105,7 @@ function ProductDescription({ product, productId }) {
             ))}
           </div>
         )}
+        </div>{/* end pdp-image-wrapper */}
       </div>
 
       {/* RIGHT — CONTENT (unchanged) */}

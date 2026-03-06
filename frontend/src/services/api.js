@@ -20,27 +20,15 @@ class APIService {
 
   // Get all products with optional filters
   static async getProducts(params = {}) {
-    try {
-      const searchParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          searchParams.append(key, value);
-        }
-      });
-
-      const url =
-        searchParams.toString().length > 0
-          ? `${API_BASE_URL}/products?${searchParams.toString()}`
-          : `${API_BASE_URL}/products`;
-
-      const data = await handleResponse(await fetch(url));
-
-      // Backend returns: { success, products, pagination }
-      return data.products || [];
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      throw error;
-    }
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') searchParams.append(k, v);
+    });
+    const url = searchParams.toString()
+      ? `${API_BASE_URL}/products?${searchParams}`
+      : `${API_BASE_URL}/products`;
+    const data = await handleResponse(await fetch(url));
+    return data.products || data; // ← handles both array and object response
   }
 
   // Get single product details
@@ -94,13 +82,13 @@ class APIService {
     return data;
   }
   static async getProfile(token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/users/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  );
-  return data;
-}
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    );
+    return data;
+  }
 
   // ========== CART (AUTHENTICATED) ==========
   static async getCart(token) {
@@ -220,6 +208,13 @@ class APIService {
     return data;
   }
 
+  static async getCategories() {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/categories`)
+    );
+    return data.categories || data;
+  }
+
   static async getAdminCategories(token) {
     const data = await handleResponse(
       await fetch(`${API_BASE_URL}/admin/categories`, {
@@ -246,7 +241,7 @@ class APIService {
   static async createProduct(payload, token) {
     // Support both FormData (with file) and JSON payloads
     const isFormData = payload instanceof FormData;
-    
+
     const options = {
       method: 'POST',
       headers: {
@@ -269,7 +264,7 @@ class APIService {
   static async updateProduct(id, payload, token) {
     // Support both FormData (with file) and JSON payloads
     const isFormData = payload instanceof FormData;
-    
+
     const options = {
       method: 'PUT',
       headers: {
@@ -388,131 +383,131 @@ class APIService {
   }
 
   static async getProductReviews(productId, params = {}) {
-  const searchParams = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') searchParams.append(k, v);
-  });
-  const url = searchParams.toString()
-    ? `${API_BASE_URL}/reviews/product/${productId}?${searchParams}`
-    : `${API_BASE_URL}/reviews/product/${productId}`;
-  const data = await handleResponse(await fetch(url));
-  return data;
-}
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') searchParams.append(k, v);
+    });
+    const url = searchParams.toString()
+      ? `${API_BASE_URL}/reviews/product/${productId}?${searchParams}`
+      : `${API_BASE_URL}/reviews/product/${productId}`;
+    const data = await handleResponse(await fetch(url));
+    return data;
+  }
 
-static async addReview(payload, token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/reviews`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
-    })
-  );
-  return data;
-}
+  static async addReview(payload, token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      })
+    );
+    return data;
+  }
 
-static async updateReview(reviewId, payload, token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
-    })
-  );
-  return data;
-}
+  static async updateReview(reviewId, payload, token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      })
+    );
+    return data;
+  }
 
-static async deleteReview(reviewId, token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  );
-  return data;
-}
+  static async deleteReview(reviewId, token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    );
+    return data;
+  }
 
-static async markReviewHelpful(reviewId) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/reviews/${reviewId}/helpful`, {
-      method: 'POST',
-    })
-  );
-  return data;
-}
+  static async markReviewHelpful(reviewId) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/reviews/${reviewId}/helpful`, {
+        method: 'POST',
+      })
+    );
+    return data;
+  }
 
-static async getWishlist(token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/wishlist`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  );
-  return data;
-}
+  static async getWishlist(token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/wishlist`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    );
+    return data;
+  }
 
-static async addToWishlist(productId, token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/wishlist`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ productId }),
-    })
-  );
-  return data;
-}
+  static async addToWishlist(productId, token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/wishlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ productId }),
+      })
+    );
+    return data;
+  }
 
-static async removeFromWishlist(productId, token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/wishlist/${productId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  );
-  return data;
-}
+  static async removeFromWishlist(productId, token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/wishlist/${productId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    );
+    return data;
+  }
 
-static async checkWishlist(productId, token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/wishlist/check/${productId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  );
-  return data;
-}
+  static async checkWishlist(productId, token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/wishlist/check/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    );
+    return data;
+  }
 
-static async updateProfile(payload, token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/users/profile`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
-    })
-  );
-  return data;
-}
+  static async updateProfile(payload, token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/users/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      })
+    );
+    return data;
+  }
 
-static async changePassword(payload, token) {
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/users/change-password`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
-    })
-  );
-  return data;
-}
+  static async changePassword(payload, token) {
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/users/change-password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      })
+    );
+    return data;
+  }
 
-static async uploadAvatar(file, token) {
-  const formData = new FormData();
-  formData.append('avatar', file);
-  const data = await handleResponse(
-    await fetch(`${API_BASE_URL}/users/profile/avatar`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    })
-  );
-  return data;
-}
+  static async uploadAvatar(file, token) {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const data = await handleResponse(
+      await fetch(`${API_BASE_URL}/users/profile/avatar`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+    );
+    return data;
+  }
 
 
 }

@@ -34,8 +34,13 @@ html {
 }
 
 @keyframes scrollLeft {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .top-bar-content:hover {
@@ -92,8 +97,13 @@ html {
   transition: width 0.3s ease;
 }
 
-.nav-center a:hover { color: #0b4ea2; }
-.nav-center a:hover::after { width: 100%; }
+.nav-center a:hover {
+  color: #0b4ea2;
+}
+
+.nav-center a:hover::after {
+  width: 100%;
+}
 
 .nav-right {
   display: flex;
@@ -111,10 +121,18 @@ html {
   position: relative;
 }
 
-.icon-btn:hover { transform: translateY(-2px) scale(1.1); }
-.icon-btn img { width: 20px; height: 20px; }
+.icon-btn:hover {
+  transform: translateY(-2px) scale(1.1);
+}
 
-.cart-btn { position: relative; }
+.icon-btn img {
+  width: 20px;
+  height: 20px;
+}
+
+.cart-btn {
+  position: relative;
+}
 
 .cart-badge {
   position: absolute;
@@ -134,9 +152,17 @@ html {
 }
 
 @keyframes badgePulse {
-  0%   { transform: scale(0.8); }
-  50%  { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.8);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* ── User avatar + dropdown ── */
@@ -152,7 +178,9 @@ html {
   user-select: none;
 }
 
-.nav-user:hover { background: #f0f7ff; }
+.nav-user:hover {
+  background: #f0f7ff;
+}
 
 .nav-avatar {
   width: 34px;
@@ -197,7 +225,7 @@ html {
   right: 0;
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(37,95,131,0.16);
+  box-shadow: 0 8px 32px rgba(37, 95, 131, 0.16);
   min-width: 200px;
   z-index: 100;
   overflow: hidden;
@@ -205,8 +233,15 @@ html {
 }
 
 @keyframes dropIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .nav-dropdown-header {
@@ -245,10 +280,17 @@ html {
   transition: background 0.15s;
 }
 
-.nav-dropdown-item:hover { background: #f0f7ff; }
+.nav-dropdown-item:hover {
+  background: #f0f7ff;
+}
 
-.nav-dropdown-item.logout { color: #ef4444; }
-.nav-dropdown-item.logout:hover { background: #fff5f5; }
+.nav-dropdown-item.logout {
+  color: #ef4444;
+}
+
+.nav-dropdown-item.logout:hover {
+  background: #fff5f5;
+}
 
 /* Login button */
 .login-btn {
@@ -272,17 +314,200 @@ html {
   transform: translateY(-1px);
 }
 
-.login-btn-icon { font-size: 16px; }
+.login-btn-icon {
+  font-size: 16px;
+}
 
 .nav-avatar {
-    overflow: hidden;
-    border-radius: 50%;
+  overflow: hidden;
+  border-radius: 50%;
 }
 
 .nav-avatar-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-    display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* ══════════════════════════════════════════════
+   ADD THESE STYLES to your existing Navbar.css
+   ══════════════════════════════════════════════ */
+
+/* ── Search container ── */
+.nav-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Search form (expands on open) ── */
+.nav-search-form {
+  display: flex;
+  align-items: center;
+  width: 0;
+  overflow: hidden;
+  transition: width 0.3s ease;
+  background: #f0f4ff;
+  border-radius: 20px;
+  border: 2px solid transparent;
+}
+
+.nav-search-form--open {
+  width: 220px;
+  border-color: #255F83;
+  padding: 0 8px;
+}
+
+.nav-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: #255F83;
+  padding: 6px 4px;
+  min-width: 0;
+}
+
+.nav-search-input::placeholder {
+  color: #aab4cc;
+  font-weight: 500;
+}
+
+.nav-search-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aab4cc;
+  font-size: 12px;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.nav-search-clear:hover {
+  color: #255F83;
+}
+
+/* ── Results dropdown ── */
+.nav-search-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  background: white;
+  border-radius: 16px;
+  border: 2px solid #DECCFE;
+  box-shadow: 0 8px 32px rgba(37, 95, 131, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+  animation: searchDrop 0.18s ease;
+}
+
+@keyframes searchDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nav-search-status {
+  padding: 16px 20px;
+  font-size: 13px;
+  color: #7a8aaa;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ── Single result row ── */
+.nav-search-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nav-search-result:last-of-type {
+  border-bottom: none;
+}
+
+.nav-search-result:hover {
+  background: #f8f5ff;
+}
+
+.nav-search-result-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f5f5f5;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.nav-search-result-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #f0f4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.nav-search-result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-search-result-name {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #255F83;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-search-result-price {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7a8aaa;
+}
+
+/* ── See all results button ── */
+.nav-search-see-all {
+  width: 100%;
+  padding: 12px 16px;
+  background: #f8f5ff;
+  border: none;
+  border-top: 2px solid #DECCFE;
+  color: #255F83;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: background 0.15s;
+  text-align: center;
+}
+
+.nav-search-see-all:hover {
+  background: #DECCFE;
 }

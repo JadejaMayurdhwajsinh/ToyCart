@@ -22,13 +22,13 @@ const deleteFile = (filePath) => {
 // ========== GET ALL PRODUCTS (WITH FILTERS) ==========
 router.get('/', async (req, res, next) => {
   try {
-    const { 
-      category, 
-      minPrice, 
-      maxPrice, 
-      search, 
-      sort = 'newest', 
-      page = 1, 
+    const {
+      category,
+      minPrice,
+      maxPrice,
+      search,
+      sort = 'newest',
+      page = 1,
       limit = 12,
       featured
     } = req.query;
@@ -52,15 +52,25 @@ router.get('/', async (req, res, next) => {
 
     if (featured === 'true') where.is_featured = true;
 
-    where.availability = { [Op.ne]: 'discontinued' };
+    // Rating filter
+    if (req.query.rating) {
+      where.rating = { [Op.gte]: parseFloat(req.query.rating) };
+    }
+
+    // Availability filter
+    if (req.query.availability) {
+      where.availability = req.query.availability;
+    } else {
+      where.availability = { [Op.ne]: 'discontinued' };
+    }
 
     const order = [];
     switch (sort) {
-      case 'price_asc':  order.push(['price', 'ASC']);     break;
-      case 'price_desc': order.push(['price', 'DESC']);    break;
-      case 'rating':     order.push(['rating', 'DESC']);   break;
+      case 'price_asc': order.push(['price', 'ASC']); break;
+      case 'price_desc': order.push(['price', 'DESC']); break;
+      case 'rating': order.push(['rating', 'DESC']); break;
       case 'newest':
-      default:           order.push(['createdAt', 'DESC']);
+      default: order.push(['createdAt', 'DESC']);
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -92,7 +102,7 @@ router.get('/', async (req, res, next) => {
 router.get('/featured/all', async (req, res, next) => {
   try {
     const products = await Product.findAll({
-      where: { 
+      where: {
         is_featured: true,
         availability: { [Op.ne]: 'discontinued' }
       },
@@ -136,33 +146,33 @@ router.get('/:id', async (req, res, next) => {
 // Changed: uploadSingle → uploadProductImages to support additional_images
 router.post('/', authMiddleware, adminMiddleware, uploadProductImages(), async (req, res, next) => {
   try {
-    const { 
-      name, 
-      description, 
-      short_description, 
-      price, 
-      categoryId, 
-      stock, 
-      is_featured 
+    const {
+      name,
+      description,
+      short_description,
+      price,
+      categoryId,
+      stock,
+      is_featured
     } = req.body;
 
     // Validations
     if (!name || !price || !categoryId || stock === undefined) {
-      if (req.files?.image?.[0])             deleteFile(`/uploads/products/${req.files.image[0].filename}`);
-      if (req.files?.additional_images)      req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
+      if (req.files?.image?.[0]) deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+      if (req.files?.additional_images) req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
       return next(new AppError('Please fill all required fields', 400));
     }
 
     if (parseFloat(price) <= 0) {
-      if (req.files?.image?.[0])             deleteFile(`/uploads/products/${req.files.image[0].filename}`);
-      if (req.files?.additional_images)      req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
+      if (req.files?.image?.[0]) deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+      if (req.files?.additional_images) req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
       return next(new AppError('Price must be greater than 0', 400));
     }
 
     const category = await Category.findByPk(categoryId);
     if (!category) {
-      if (req.files?.image?.[0])             deleteFile(`/uploads/products/${req.files.image[0].filename}`);
-      if (req.files?.additional_images)      req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
+      if (req.files?.image?.[0]) deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+      if (req.files?.additional_images) req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
       return next(new AppError('Category not found', 404));
     }
 
@@ -197,7 +207,7 @@ router.post('/', authMiddleware, adminMiddleware, uploadProductImages(), async (
       product
     });
   } catch (error) {
-    if (req.files?.image?.[0])        deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+    if (req.files?.image?.[0]) deleteFile(`/uploads/products/${req.files.image[0].filename}`);
     if (req.files?.additional_images) req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
     next(error);
   }
@@ -212,17 +222,17 @@ router.put('/:id', authMiddleware, adminMiddleware, uploadProductImages(), async
 
     const product = await Product.findByPk(id);
     if (!product) {
-      if (req.files?.image?.[0])             deleteFile(`/uploads/products/${req.files.image[0].filename}`);
-      if (req.files?.additional_images)      req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
+      if (req.files?.image?.[0]) deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+      if (req.files?.additional_images) req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
       return next(new AppError('Product not found', 404));
     }
 
     const updateData = {
-      name:              name              || product.name,
-      description:       description       || product.description,
+      name: name || product.name,
+      description: description || product.description,
       short_description: short_description || product.short_description,
-      price:             price             || product.price,
-      categoryId:        categoryId        || product.categoryId,
+      price: price || product.price,
+      categoryId: categoryId || product.categoryId,
       is_featured: is_featured !== undefined
         ? (is_featured === 'true' || is_featured === true)
         : product.is_featured,
@@ -276,7 +286,7 @@ router.put('/:id', authMiddleware, adminMiddleware, uploadProductImages(), async
       product
     });
   } catch (error) {
-    if (req.files?.image?.[0])        deleteFile(`/uploads/products/${req.files.image[0].filename}`);
+    if (req.files?.image?.[0]) deleteFile(`/uploads/products/${req.files.image[0].filename}`);
     if (req.files?.additional_images) req.files.additional_images.forEach(f => deleteFile(`/uploads/products/${f.filename}`));
     next(error);
   }
@@ -323,7 +333,7 @@ router.get('/category/:categoryId', async (req, res, next) => {
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     const { count, rows } = await Product.findAndCountAll({
-      where: { 
+      where: {
         categoryId,
         availability: { [Op.ne]: 'discontinued' }
       },
