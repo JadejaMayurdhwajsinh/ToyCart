@@ -12,7 +12,8 @@ import fanimg6 from "../../../public/images/fan-img6.png";
 import fanimg7 from "../../../public/images/fan-img7.png";
 import fanimg8 from "../../../public/images/fan-img8.png";
 import Reviewcard from "../../components/Reviewcard/Reviewcard.jsx";
-import Productcard from "../../components/Productcard/Productcard.jsx";
+// import Productcard from "../../components/Productcard/Productcard.jsx";
+import Productcard, { SkeletonCard } from "../../components/Productcard/Productcard.jsx";
 import APIService from "../../services/api";
 
 const SORT_OPTIONS = [
@@ -57,7 +58,7 @@ function Alltoys() {
       .catch(() => { });
   }, []);
 
-useEffect(() => { setPage(1); fetchProducts(1, false); }, [applied, sort]);
+  useEffect(() => { setPage(1); fetchProducts(1, false); }, [applied, sort]);
 
   const fetchProducts = async (currentPage = 1, append = false) => {
     try {
@@ -101,7 +102,7 @@ useEffect(() => { setPage(1); fetchProducts(1, false); }, [applied, sort]);
     const nextPage = page + 1;
     setPage(nextPage);
     fetchProducts(nextPage, true);
-};
+  };
 
   const activeFilterCount = Object.values(applied).filter(Boolean).length;
   const currentSortLabel = sort ? SORT_OPTIONS.find((o) => o.value === sort)?.label : "Sort by";
@@ -277,7 +278,9 @@ useEffect(() => { setPage(1); fetchProducts(1, false); }, [applied, sort]);
 
       {/* ── Product grid ── */}
       <div className="product-section__content">
-        {loading && <p className="at-loading">Loading toys...</p>}
+        {loading && page === 1 && (
+          [...Array(6)].map((_, i) => <SkeletonCard key={i} />)
+        )}
         {error && !loading && <p style={{ color: "#c00" }}>{error}</p>}
         {!loading && !error && products.length === 0 && (
           <div className="at-empty">
@@ -293,6 +296,7 @@ useEffect(() => { setPage(1); fetchProducts(1, false); }, [applied, sort]);
             Price={product.price}
             rating={product.rating}
             reviewCount={product.number_of_reviews}
+            isNew={product.is_new}
           />
         ))}
       </div>
@@ -344,6 +348,8 @@ useEffect(() => { setPage(1); fetchProducts(1, false); }, [applied, sort]);
       <Actioncard title="Sell a toy like this back to Whirli" text="Placerat sollicitudin faucibus egestas viverra, cursus nascetur fermentum nam." button="Sell this toy back" variant="white" />
       <Actioncard title="Gift this toy with a Whirli subscription" text="Porta sit id aliquam in lobortis vitae consequat." button="Gift this toy" variant="pink" />
     </section>
+
+
   </>);
 }
 

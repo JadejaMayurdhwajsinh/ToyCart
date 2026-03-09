@@ -18,10 +18,10 @@ function StarRating({ rating = 0, count = 0 }) {
     );
 }
 
-function Productcard({ id, ProductImage, ProductName, Price, rating = 0, reviewCount = 0 }) {
+function Productcard({ id, ProductImage, ProductName, Price, rating = 0, reviewCount = 0, isNew = false }) {
     const token = typeof window !== "undefined" ? localStorage.getItem("customerToken") : null;
 
-    const [wishlisted,    setWishlisted]    = useState(false);
+    const [wishlisted, setWishlisted] = useState(false);
     const [wishlistLoading, setWishlistLoading] = useState(false);
 
     // Check if product is already in wishlist on mount
@@ -29,7 +29,7 @@ function Productcard({ id, ProductImage, ProductName, Price, rating = 0, reviewC
         if (!token || !id) return;
         APIService.checkWishlist(id, token)
             .then((data) => setWishlisted(data?.inWishlist || false))
-            .catch(() => {});
+            .catch(() => { });
     }, [id, token]);
 
     const handleAddToToybox = (e) => {
@@ -70,7 +70,9 @@ function Productcard({ id, ProductImage, ProductName, Price, rating = 0, reviewC
             <div className="product-card">
                 <div className="product-card__top">
                     <div className="product-card__top-first">
-                        <p className="badge">NEW IN</p>
+                        <div> {/* empty div to push wishlist right when no badge */}
+                            {isNew && <p className="badge">NEW IN</p>}
+                        </div>
                         <button
                             className={`wishlist-btn ${wishlisted ? "wishlist-btn--active" : ""}`}
                             onClick={handleWishlist}
@@ -99,6 +101,28 @@ function Productcard({ id, ProductImage, ProductName, Price, rating = 0, reviewC
                 </div>
             </div>
         </Link>
+    );
+}
+
+export function SkeletonCard() {
+    return (
+        <div className="product-card skeleton-card">
+            <div className="product-card__top">
+                <div className="product-card__top-first">
+                    <div className="skeleton skeleton-badge" />
+                    <div className="skeleton skeleton-heart" />
+                </div>
+                <div className="product-card__top-second">
+                    <div className="skeleton skeleton-img" />
+                    <div className="skeleton skeleton-btn" />
+                </div>
+            </div>
+            <div className="product-card__bottom">
+                <div className="skeleton skeleton-name" />
+                <div className="skeleton skeleton-stars" />
+                <div className="skeleton skeleton-price" />
+            </div>
+        </div>
     );
 }
 

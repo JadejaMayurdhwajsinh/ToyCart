@@ -38,24 +38,24 @@ function RatingBar({ star, count, total }) {
 export default function ProductReviews({ productId, productRating, totalReviews }) {
   const token = typeof window !== "undefined" ? localStorage.getItem("customerToken") : null;
 
-  const [reviews,    setReviews]    = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [pagination, setPagination] = useState({});
-  const [loading,    setLoading]    = useState(true);
-  const [sort,       setSort]       = useState("newest");
-  const [breakdown,  setBreakdown]  = useState({ 1:0, 2:0, 3:0, 4:0, 5:0 });
+  const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState("newest");
+  const [breakdown, setBreakdown] = useState({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
 
   // Write review form
-  const [showForm,   setShowForm]   = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [formRating, setFormRating] = useState(0);
-  const [formTitle,  setFormTitle]  = useState("");
-  const [formText,   setFormText]   = useState("");
+  const [formTitle, setFormTitle] = useState("");
+  const [formText, setFormText] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [formError,  setFormError]  = useState("");
-  const [formSuccess,setFormSuccess]= useState("");
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
 
   // User's existing review
-  const [myReview,   setMyReview]   = useState(null);
-  const [editMode,   setEditMode]   = useState(false);
+  const [myReview, setMyReview] = useState(null);
+  const [editMode, setEditMode] = useState(false);
 
   const loadReviews = async (s = sort) => {
     try {
@@ -66,7 +66,7 @@ export default function ProductReviews({ productId, productRating, totalReviews 
       setPagination(data.pagination || {});
 
       // Build star breakdown
-      const bd = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+      const bd = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       rows.forEach(r => { if (bd[r.rating] !== undefined) bd[r.rating]++; });
       setBreakdown(bd);
 
@@ -133,7 +133,7 @@ export default function ProductReviews({ productId, productRating, totalReviews 
     try {
       await APIService.markReviewHelpful(reviewId);
       setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, helpful_count: r.helpful_count + 1 } : r));
-    } catch {}
+    } catch { }
   };
 
   const openEditForm = () => {
@@ -173,7 +173,7 @@ export default function ProductReviews({ productId, productRating, totalReviews 
           <div className="pr-total-count">{total} review{total !== 1 ? "s" : ""}</div>
         </div>
         <div className="pr-summary-bars">
-          {[5,4,3,2,1].map(s => (
+          {[5, 4, 3, 2, 1].map(s => (
             <RatingBar key={s} star={s} count={breakdown[s]} total={total} />
           ))}
         </div>
@@ -183,7 +183,7 @@ export default function ProductReviews({ productId, productRating, totalReviews 
       {showForm && (
         <div className="pr-form-card">
           <h3 className="pr-form-title">{editMode ? "Edit Your Review" : "Write a Review"}</h3>
-          {formError   && <p className="pr-form-error">{formError}</p>}
+          {formError && <p className="pr-form-error">{formError}</p>}
           {formSuccess && <p className="pr-form-success">{formSuccess}</p>}
           <form onSubmit={handleSubmitReview} className="pr-form">
             <div className="pr-form-group">
@@ -222,23 +222,26 @@ export default function ProductReviews({ productId, productRating, totalReviews 
 
       {/* ── Sort controls ── */}
       {reviews.length > 0 && (
-        <div className="pr-controls">
-          <span className="pr-controls-label">Sort by:</span>
-          {[
-            { value: "newest",      label: "Newest" },
-            { value: "helpful",     label: "Most Helpful" },
-            { value: "rating_high", label: "Highest Rated" },
-            { value: "rating_low",  label: "Lowest Rated" },
-          ].map(opt => (
-            <button
-              key={opt.value}
-              className={`pr-sort-btn ${sort === opt.value ? "pr-sort-btn--active" : ""}`}
-              onClick={() => handleSortChange(opt.value)}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <>
+          <hr style={{ border: 'none', borderTop: '2px solid #DECCFE', margin: '0 0 20px' }} />
+          <div className="pr-controls">
+            <span className="pr-controls-label">Sort by:</span>
+            {[
+              { value: "newest", label: "Newest" },
+              { value: "helpful", label: "Most Helpful" },
+              { value: "rating_high", label: "Highest Rated" },
+              { value: "rating_low", label: "Lowest Rated" },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                className={`pr-sort-btn ${sort === opt.value ? "pr-sort-btn--active" : ""}`}
+                onClick={() => handleSortChange(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {/* ── Reviews list ── */}

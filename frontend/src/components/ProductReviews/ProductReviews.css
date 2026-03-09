@@ -1,8 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
 .pr-section {
-  padding: 60px 0 40px;
+  padding: 60px 40px 40px;
   font-family: 'Nunito', sans-serif;
+  max-width: 900px;        /* ← constrain width */
+  margin: 0 auto;          /* ← center it */
 }
 
 /* ── Header ── */
@@ -27,13 +29,14 @@
   color: #F7FFB4;
   border: none;
   border-radius: 24px;
-  padding: 10px 22px;
-  font-size: 14px;
+  padding: 12px 28px;       /* ← bigger */
+  font-size: 15px;           /* ← bigger text */
   font-weight: 800;
   cursor: pointer;
   font-family: 'Nunito', sans-serif;
   transition: transform 0.18s, box-shadow 0.18s;
-  box-shadow: 0 4px 14px rgba(37,95,131,0.2);
+  box-shadow: 0 4px 14px rgba(37,95,131,0.25);
+  letter-spacing: 0.3px;    /* ← slight spacing */
 }
 
 .pr-write-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37,95,131,0.3); }
@@ -75,12 +78,13 @@
   display: flex;
   gap: 40px;
   align-items: center;
-  background: #F7FFB4;
-  border-radius: 20px;
-  padding: 24px 32px;
-  margin-bottom: 32px;
+  background: linear-gradient(135deg, #F7FFB4 60%, #DECCFE30 100%); /* ← gradient */
+  border-radius: 24px;
+  padding: 32px 40px;
+  margin-bottom: 36px;
   border: 2px solid #e8f090;
   flex-wrap: wrap;
+  box-shadow: 0 4px 24px rgba(37,95,131,0.07); /* ← subtle shadow */
 }
 
 .pr-summary-score {
@@ -278,13 +282,14 @@
 
 .pr-empty {
   text-align: center;
-  padding: 48px 20px;
-  background: #CCFBF1;
-  border-radius: 20px;
+  padding: 56px 20px;        /* ← more padding */
+  background: linear-gradient(135deg, #CCFBF1, #F7FFB430);
+  border-radius: 24px;
   border: 2px dashed #a7f3e4;
 }
 
-.pr-empty-icon { font-size: 48px; margin-bottom: 12px; }
+.pr-empty-icon { font-size: 56px; margin-bottom: 16px; } /* ← bigger icon */
+
 
 .pr-empty p {
   color: #255F83;
@@ -298,11 +303,11 @@
 
 .pr-card {
   background: white;
-  border-radius: 18px;
-  border: 2px solid #DECCFE;
-  padding: 20px 24px;
+  border-radius: 20px;
+  border: 1.5px solid #DECCFE;
+  padding: 24px 28px;       /* ← more padding */
   transition: box-shadow 0.2s, transform 0.2s;
-  box-shadow: 0 2px 12px rgba(222,204,254,0.2);
+  box-shadow: 0 2px 12px rgba(222,204,254,0.15);
 }
 
 .pr-card:hover {

@@ -14,6 +14,7 @@ const emptyProduct = {
   description: "",
   short_description: "",
   is_featured: false,
+  is_new: false,
 };
 
 // 4 empty gallery slots matching DB field: additional_images (JSON array)
@@ -111,6 +112,7 @@ const AdminProducts = () => {
       description: product.description || "",
       short_description: product.short_description || "",
       is_featured: !!product.is_featured,
+      is_new: !!product.is_new,
     });
 
     // Populate gallery from existing additional_images (JSON array of paths)
@@ -173,6 +175,7 @@ const AdminProducts = () => {
       payload.append("description", form.description);
       payload.append("short_description", form.short_description);
       payload.append("is_featured", !!form.is_featured);
+      payload.append("is_new", form.is_new ? "true" : "false");
 
       // Main image
       if (form.image instanceof File) {
@@ -454,6 +457,16 @@ const AdminProducts = () => {
                     onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
                   />{" "}
                   Featured product
+                </label>
+              </div>
+              <div className="admin-form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={form.is_new}
+                    onChange={(e) => setForm({ ...form, is_new: e.target.checked })}
+                  />{" "}
+                  New In product
                 </label>
               </div>
               <div className="modal-actions">

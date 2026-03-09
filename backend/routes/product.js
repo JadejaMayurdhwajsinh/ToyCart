@@ -198,6 +198,7 @@ router.post('/', authMiddleware, adminMiddleware, uploadProductImages(), async (
       additional_images,   // saved as JSON array in DB
       stock: parseInt(stock),
       is_featured: is_featured === 'true' || is_featured === true,
+      is_new: is_new === 'true' || is_new === true,
       availability: parseInt(stock) > 0 ? 'in_stock' : 'out_of_stock'
     });
 
@@ -218,7 +219,8 @@ router.post('/', authMiddleware, adminMiddleware, uploadProductImages(), async (
 router.put('/:id', authMiddleware, adminMiddleware, uploadProductImages(), async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, description, short_description, price, categoryId, stock, is_featured, keep_additional_images } = req.body;
+    const { name, description, short_description, price, categoryId, stock, is_featured, is_new, keep_additional_images } = req.body;
+    console.log("is_new received:", is_new, typeof is_new);
 
     const product = await Product.findByPk(id);
     if (!product) {
@@ -236,6 +238,9 @@ router.put('/:id', authMiddleware, adminMiddleware, uploadProductImages(), async
       is_featured: is_featured !== undefined
         ? (is_featured === 'true' || is_featured === true)
         : product.is_featured,
+      is_new: is_new !== undefined          // ← add this
+        ? (is_new === 'true' || is_new === true)
+        : product.is_new,
     };
 
     // ── Main image update ──

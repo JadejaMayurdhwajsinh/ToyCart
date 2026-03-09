@@ -28,3 +28,5 @@ module.exports = {
   Review,
   WishList,
 };
+
+sequelize.sync({ alter: true })

@@ -68,6 +68,10 @@ module.exports = (sequelize) => {
       type: DataTypes.ENUM('in_stock', 'out_of_stock', 'discontinued'),
       defaultValue: 'in_stock',
     },
+    is_new: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

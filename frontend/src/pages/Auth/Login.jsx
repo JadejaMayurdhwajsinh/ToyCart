@@ -72,16 +72,16 @@ const Login = () => {
               required
             />
           </div>
+        <p style={{ textAlign: "right", marginTop: "5px", fontSize: "13px" }}>
+          <Link to="/forgot-password" style={{ color: "#255F83", fontWeight: 700 }}>
+            Forgot password?
+          </Link>
+        </p>
           <button type="submit" className="admin-login-btn" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: "12px", fontSize: "13px" }}>
-          <Link to="/forgot-password" style={{ color: "#255F83", fontWeight: 700 }}>
-            Forgot password?
-          </Link>
-        </p>
 
         <p className="admin-login-hint">
           New here? <Link to="/register">Create a ToyCart account</Link>
