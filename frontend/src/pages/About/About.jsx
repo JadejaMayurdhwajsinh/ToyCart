@@ -38,8 +38,6 @@ const stats = [
   { value: "∞", label: "Smiles Delivered" },
 ];
 
-/* ══════════════════════════════════════════════════════════ */
-
 const About = () => {
   useReveal();
 

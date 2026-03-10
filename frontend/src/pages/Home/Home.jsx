@@ -162,12 +162,7 @@ function Home() {
               alt="Phone mockup"
               className="phone-image"
             />
-
-            {/* <div className="workflow-actions">
-              <button className="btn btn-active">Rent</button>
-              <button className="btn">Buy</button>
-              <button className="btn">Sell</button>
-            </div> */}
+            
           </div>
 
           <div className="workflow-steps">

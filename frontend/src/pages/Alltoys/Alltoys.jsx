@@ -12,7 +12,6 @@ import fanimg6 from "../../../public/images/fan-img6.png";
 import fanimg7 from "../../../public/images/fan-img7.png";
 import fanimg8 from "../../../public/images/fan-img8.png";
 import Reviewcard from "../../components/Reviewcard/Reviewcard.jsx";
-// import Productcard from "../../components/Productcard/Productcard.jsx";
 import Productcard, { SkeletonCard } from "../../components/Productcard/Productcard.jsx";
 import APIService from "../../services/api";
 
@@ -235,7 +234,7 @@ function Alltoys() {
               <div className="at-filter-actions">
                 <button className="at-clear-btn" onClick={handleClearFilters}>Clear All</button>
                 <button className="at-apply-btn" onClick={handleApplyFilters}>Apply Filters</button>
-              </div>x
+              </div>
 
             </div>
           )}

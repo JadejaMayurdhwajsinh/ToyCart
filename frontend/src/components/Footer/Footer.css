@@ -63,7 +63,7 @@ body, html, #root {
   padding: 40px;
   background-color: #246089;
   align-items: start;
-  padding-bottom: 0;
+  padding-bottom: 0px;
 }
 
 .footer-logo h2 {
@@ -124,9 +124,9 @@ body, html, #root {
 }
 
 .footer-cta .cta-block h2 {
-  font-weight: 900;
+  font-weight: bolder;
   font-size: 64px;
-  width: 500px;
+  width: 400px;
   margin: 0;
   color: white;
 }
@@ -157,7 +157,6 @@ body, html, #root {
 .footer-cta .footer-illustration img {
   width: 340px;
   height: 320px;
-  bottom: 0;
 }
 
 .footer-bottom {
