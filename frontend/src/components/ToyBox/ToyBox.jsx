@@ -2,6 +2,7 @@ import "./ToyBox.css";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import APIService from "../../services/api";
+import { useCart } from "../../hooks/useCart";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -9,37 +10,23 @@ const EmptyCart = () => (
   <div className="toybox-empty-state">
     <div className="toybox-empty-illustration">
       <svg viewBox="0 0 320 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Background blobs */}
         <ellipse cx="160" cy="200" rx="130" ry="40" fill="#DECCFE" opacity="0.35" />
         <ellipse cx="80" cy="80" rx="50" ry="50" fill="#F7FFB4" opacity="0.5" />
         <ellipse cx="250" cy="60" rx="35" ry="35" fill="#EDC2C9" opacity="0.45" />
-
-        {/* Big empty cart */}
         <rect x="60" y="100" width="190" height="120" rx="18" fill="white" stroke="#DECCFE" strokeWidth="3"/>
-        {/* Cart handle */}
         <path d="M40 70 Q40 50 60 50 L80 50" stroke="#b89ef8" strokeWidth="5" strokeLinecap="round" fill="none"/>
         <circle cx="40" cy="70" r="8" fill="#b89ef8"/>
-
-        {/* Cart front panel */}
         <rect x="75" y="115" width="160" height="90" rx="12" fill="#F8F5FF"/>
-
-        {/* Sad face on cart */}
         <circle cx="130" cy="152" r="5" fill="#b89ef8"/>
         <circle cx="180" cy="152" r="5" fill="#b89ef8"/>
         <path d="M140 175 Q155 165 170 175" stroke="#b89ef8" strokeWidth="3" strokeLinecap="round" fill="none"/>
-
-        {/* Wheels */}
         <circle cx="100" cy="228" r="14" fill="white" stroke="#DECCFE" strokeWidth="3"/>
         <circle cx="100" cy="228" r="6" fill="#b89ef8"/>
         <circle cx="210" cy="228" r="14" fill="white" stroke="#DECCFE" strokeWidth="3"/>
         <circle cx="210" cy="228" r="6" fill="#b89ef8"/>
-
-        {/* Floating stars */}
         <text x="22" y="45" fontSize="18" opacity="0.7">✦</text>
         <text x="270" y="100" fontSize="14" opacity="0.6">✦</text>
         <text x="255" y="170" fontSize="10" opacity="0.5">✦</text>
-
-        {/* Floating toy icons */}
         <text x="248" y="48" fontSize="22">🧸</text>
         <text x="30" y="140" fontSize="18">🎀</text>
         <text x="270" y="195" fontSize="16">⭐</text>
@@ -52,6 +39,8 @@ const EmptyCart = () => (
 
 function ToyBox() {
     const navigate = useNavigate();
+    const { syncCart } = useCart(); // ← pull syncCart to keep navbar in sync
+
     const [cartItems, setCartItems] = useState([]);
     const [loading,   setLoading]   = useState(false);
     const [error,     setError]     = useState("");
@@ -70,7 +59,9 @@ function ToyBox() {
                 productId: item.productId,
                 name:      item.Product?.name,
                 image:     item.Product?.image_url
-                    ? `${API_BASE}${item.Product.image_url}`
+                    ? item.Product.image_url.startsWith("http")
+                        ? item.Product.image_url
+                        : `${API_BASE}${item.Product.image_url}`
                     : null,
                 price:    item.Product?.price,
                 quantity: item.quantity,
@@ -89,7 +80,9 @@ function ToyBox() {
         if (!token || newQty < 1) return;
         try {
             await APIService.updateCartItem(cartId, newQty, token);
+            // update local state + sync navbar badge together
             await fetchCart();
+            await syncCart();
         } catch {
             setError("Could not update quantity.");
         }
@@ -99,7 +92,9 @@ function ToyBox() {
         if (!token) return;
         try {
             await APIService.removeCartItem(cartId, token);
+            // update local state + sync navbar badge together
             await fetchCart();
+            await syncCart();
         } catch {
             setError("Could not remove item.");
         }

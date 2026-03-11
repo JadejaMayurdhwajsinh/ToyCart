@@ -9,7 +9,7 @@ import APIService from "../../services/api";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function Navbar() {
-    const { getCartCount } = useCart();
+    const { getCartCount, syncCart } = useCart();
     const navigate = useNavigate();
     const cartCount = getCartCount();
 
@@ -21,14 +21,15 @@ function Navbar() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     // Search
-    const [searchOpen,  setSearchOpen]  = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchOpen,    setSearchOpen]    = useState(false);
+    const [searchQuery,   setSearchQuery]   = useState("");
     const [searchResults, setSearchResults] = useState([]);
-    const [searching,   setSearching]   = useState(false);
-    const searchRef  = useRef(null);
-    const inputRef   = useRef(null);
+    const [searching,     setSearching]     = useState(false);
+    const searchRef   = useRef(null);
+    const inputRef    = useRef(null);
     const debounceRef = useRef(null);
 
+    // Fetch profile
     useEffect(() => {
         if (!isLoggedIn) { setUserName(""); setUserAvatar(null); return; }
         const fetchProfile = () => {
@@ -41,6 +42,8 @@ function Navbar() {
                 .catch(() => setUserName("User"));
         };
         fetchProfile();
+        // Re-sync cart count whenever user logs in
+        syncCart();
         window.addEventListener("profileUpdated", fetchProfile);
         return () => window.removeEventListener("profileUpdated", fetchProfile);
     }, [isLoggedIn, token]);
@@ -105,7 +108,11 @@ function Navbar() {
 
     const handleLogout = () => {
         localStorage.removeItem("customerToken");
-        setUserName(""); setUserAvatar(null); setDropdownOpen(false);
+        setUserName("");
+        setUserAvatar(null);
+        setDropdownOpen(false);
+        // Clear cart count immediately on logout
+        window.dispatchEvent(new Event("cartUpdated"));
         navigate("/");
         window.location.reload();
     };
@@ -168,7 +175,11 @@ function Navbar() {
                                 onChange={handleSearchInput}
                             />
                             {searchQuery && (
-                                <button type="button" className="nav-search-clear" onClick={() => { setSearchQuery(""); setSearchResults([]); inputRef.current?.focus(); }}>✕</button>
+                                <button
+                                    type="button"
+                                    className="nav-search-clear"
+                                    onClick={() => { setSearchQuery(""); setSearchResults([]); inputRef.current?.focus(); }}
+                                >✕</button>
                             )}
                         </form>
 

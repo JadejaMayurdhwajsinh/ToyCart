@@ -189,3 +189,58 @@
   font-size: 12px;
   margin: 0;
 }
+
+.field-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Red border only on invalid input */
+input.input-error {
+  border-color: #cc0000 !important;
+  outline: none;
+}
+
+input.input-error:focus {
+  border-color: #cc0000 !important;
+  box-shadow: 0 0 0 2px rgba(204, 0, 0, 0.18);
+}
+
+/* Error message below field */
+.field-error {
+  display: block;
+  color: #cc0000;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+  margin-left: 2px;
+  line-height: 1.4;
+}
+
+/* Form-level banners (cart empty / not logged in / success) */
+.form-error-banner {
+  color: #c00;
+  background: #fff5f5;
+  border: 1px solid #f5c6c6;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.form-success-banner {
+  color: #1a7a1a;
+  background: #f0fff0;
+  border: 1px solid #b3e6b3;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+/* Make sure form-row children stretch properly */
+.form-row .field-wrapper {
+  flex: 1;
+}
+

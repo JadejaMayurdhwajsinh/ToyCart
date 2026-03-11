@@ -36,6 +36,8 @@ import marqueelogo2 from "../../../public/images/marquee-logo2.png";
 import marqueelogo3 from "../../../public/images/marquee-logo3.png";
 import marqueelogo4 from "../../../public/images/marquee-logo4.png";
 
+const VISIBLE_COUNT = 4;
+
 function Home() {
   const heroRef = useRef(null);
   const openBoxRef = useRef(null);
@@ -43,6 +45,11 @@ function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Slider state
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const [direction, setDirection] = useState(null);
 
   const scrollToOpenBox = () => {
     openBoxRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,9 +72,36 @@ function Home() {
         setLoading(false);
       }
     };
-
     fetchFeatured();
   }, []);
+
+  const maxIndex = Math.max(0, featuredProducts.length - VISIBLE_COUNT);
+
+  const handlePrev = () => {
+    if (animating || currentIndex === 0) return;
+    setDirection("prev");
+    setAnimating(true);
+    setTimeout(() => {
+      setCurrentIndex((prev) => Math.max(0, prev - VISIBLE_COUNT));
+      setAnimating(false);
+      setDirection(null);
+    }, 350);
+  };
+
+  const handleNext = () => {
+    if (animating || currentIndex >= maxIndex) return;
+    setDirection("next");
+    setAnimating(true);
+    setTimeout(() => {
+      setCurrentIndex((prev) => Math.min(maxIndex, prev + VISIBLE_COUNT));
+      setAnimating(false);
+      setDirection(null);
+    }, 350);
+  };
+
+  const visibleProducts = featuredProducts.slice(currentIndex, currentIndex + VISIBLE_COUNT);
+  const totalDots = Math.ceil(featuredProducts.length / VISIBLE_COUNT);
+  const activeDot = Math.floor(currentIndex / VISIBLE_COUNT);
 
   return (
     <>
@@ -101,13 +135,13 @@ function Home() {
               </div>
             </div>
 
-
             <div className="hero-buttons">
               <button className="btn-outline" onClick={() => navigate("/Alltoys")}>Browse toys</button>
               <button className="btn-primary" onClick={() => navigate("/Order")}>Start your toy box</button>
             </div>
           </div>
         </section>
+
         <section className="openbox-section" ref={openBoxRef}>
           <div className="openbox-section__top">
             <Callout
@@ -146,6 +180,7 @@ function Home() {
             <img src={moveup} alt="moveup icon" className="moveup-icon" onClick={scrollToHero} />
           </div>
         </section>
+
         <section className="pile-section">
           <img src={pilePhoto} alt="Pile of toys" className="pile-photo" />
         </section>
@@ -153,50 +188,30 @@ function Home() {
 
       <section className="workflow">
         <h2 className="workflow-title">How it works</h2>
-
         <div className="workflow-content">
           <div className="workflow-phone">
             <img src={toycartlogo} alt="logo" className="toycartlogo" />
-            <img
-              src={workflowPhone}
-              alt="Phone mockup"
-              className="phone-image"
-            />
-            
+            <img src={workflowPhone} alt="Phone mockup" className="phone-image" />
           </div>
-
           <div className="workflow-steps">
             <ol>
               <li>
                 <strong>Choose your plan</strong>
-                <p>
-                  Rhoncus augue imperdiet ullamcorper egestas. Elit quis libero
-                  sed orci sed dolor sit.
-                </p>
+                <p>Rhoncus augue imperdiet ullamcorper egestas. Elit quis libero sed orci sed dolor sit.</p>
               </li>
               <li>
                 <strong>Fill your box</strong>
-                <p>
-                  Augue imperdiet ullamcorper egestas. Elit quis libero sed orci
-                  sed maecenas.
-                </p>
+                <p>Augue imperdiet ullamcorper egestas. Elit quis libero sed orci sed maecenas.</p>
               </li>
               <li>
-                <strong>Keep the toys until you’re done</strong>
-                <p>
-                  Molestie malesuada sapien amet massa tellus lectus sed
-                  maecenas.
-                </p>
+                <strong>Keep the toys until you're done</strong>
+                <p>Molestie malesuada sapien amet massa tellus lectus sed maecenas.</p>
               </li>
               <li>
                 <strong>Return and refresh</strong>
-                <p>
-                  Rhoncus augue imperdiet ullamcorper eget as. Molestie malesuada
-                  sapien.
-                </p>
+                <p>Rhoncus augue imperdiet ullamcorper eget as. Molestie malesuada sapien.</p>
               </li>
             </ol>
-
             <button className="btn-start">Get started</button>
           </div>
         </div>
@@ -235,31 +250,97 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Customer Favourites with Slider ── */}
       <section className="customerFav-section">
         <div className="customerFav-content">
           <div className="section-heading">
             <h4>Customer favourites</h4>
             <div className="heading-actions">
               <a href="/Alltoys" className="see-all-btn">See all toys</a>
-              <button className="nav-btn nav-prev"><img src={navprev} alt="nav prev" /></button>
-              <button className="nav-btn nav-next"><img src={navnext} alt="nav next" /></button>
+              <button
+                className={`nav-btn nav-prev ${currentIndex === 0 ? "disabled" : ""}`}
+                onClick={handlePrev}
+                disabled={currentIndex === 0 || animating}
+                aria-label="Previous products"
+                data-tooltip="Previous"
+              >
+                <img src={navprev} alt="nav prev" />
+              </button>
+              <button
+                className={`nav-btn nav-next ${currentIndex >= maxIndex ? "disabled" : ""}`}
+                onClick={handleNext}
+                disabled={currentIndex >= maxIndex || animating}
+                aria-label="Next products"
+                data-tooltip="Next"
+              >
+                <img src={navnext} alt="nav next" />
+              </button>
             </div>
           </div>
-          {loading && <p>Loading toys...</p>}
+
+          {loading && (
+            <div className="fav-slider-loading">
+              {[...Array(VISIBLE_COUNT)].map((_, i) => (
+                <div key={i} className="fav-skeleton-card" />
+              ))}
+            </div>
+          )}
+
           {error && !loading && <p style={{ color: "#c00" }}>{error}</p>}
-          {!loading && !error && featuredProducts.map((product) => (
-            <Productcard
-              key={product.id}
-              id={product.id}
-              ProductImage={product.image_url}
-              ProductName={product.name}
-              Price={product.price}
-              rating={product.rating}
-              reviewCount={product.number_of_reviews}
-            />
-          ))}
+
+          {!loading && !error && featuredProducts.length > 0 && (
+            <>
+              <div className={`fav-slider-track ${animating ? `slide-${direction}` : ""}`}>
+                {visibleProducts.map((product) => (
+                  <Productcard
+                    key={product.id}
+                    id={product.id}
+                    ProductImage={
+                      product.image_url
+                        ? product.image_url.startsWith("/uploads")
+                          ? `http://localhost:5000${product.image_url}`
+                          : product.image_url
+                        : product.ProductImage
+                    }
+                    ProductName={product.name || product.ProductName}
+                    Price={product.price || product.Price}
+                    rating={product.rating}
+                    reviewCount={product.number_of_reviews}
+                  />
+                ))}
+              </div>
+
+              {totalDots > 1 && (
+                <div className="fav-slider-dots">
+                  {[...Array(totalDots)].map((_, i) => (
+                    <button
+                      key={i}
+                      className={`dot ${i === activeDot ? "active" : ""}`}
+                      onClick={() => {
+                        if (animating) return;
+                        setDirection(i > activeDot ? "next" : "prev");
+                        setAnimating(true);
+                        setTimeout(() => {
+                          setCurrentIndex(i * VISIBLE_COUNT);
+                          setAnimating(false);
+                          setDirection(null);
+                        }, 350);
+                      }}
+                      aria-label={`Go to page ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {!loading && !error && featuredProducts.length === 0 && (
+            <p className="no-products">No featured products available right now.</p>
+          )}
         </div>
       </section>
+
       <section className="safety-section">
         <div className="safety-content">
           <div className="safety-image">
@@ -276,28 +357,27 @@ function Home() {
           </div>
         </div>
       </section>
+
       <section className="sollicit-section">
         <div className="sollicit-content">
           <div className="sollicit-image">
             <img src={babyteddy} alt="Baby teddy toy" className="sollicit-img1" />
           </div>
-
           <div className="sollicit-text">
             <div className="sollicit-text__top">
               <h2>Sollicit udin donec</h2>
             </div>
             <div className="sollicit-text__bottom">
-
               <p className="sollicit-text__content">
                 Aliquet nunc enim egestas non gravida. Nec sed massa purus lacus.
                 Tortor ornare pretium non sagittis eu aliquam.
               </p>
-
               <a href="#" className="sollicit-link">Visit marketplace</a>
             </div>
           </div>
         </div>
       </section>
+
       <section className="commitment-section">
         <div className="commitment-content">
           <div className="commitment-text">
@@ -314,6 +394,7 @@ function Home() {
           </div>
         </div>
       </section>
+
       <section className="sustainability-section">
         <div className="sustainability-content">
           <div className="sustainability-section__top">
@@ -323,7 +404,8 @@ function Home() {
             <div>
               <p className="sustainability-section__top-img">
                 <img src={staticon} alt="stat icon" className="stat-icon" />
-                2,980,032</p>
+                2,980,032
+              </p>
             </div>
           </div>
           <div className="sustainability-section__center">
@@ -339,6 +421,7 @@ function Home() {
           </div>
         </div>
       </section>
+
       <section className="gift-section">
         <div className="gift-content">
           <div className="gift-image">
@@ -355,64 +438,33 @@ function Home() {
           </div>
         </div>
       </section>
+
       <section className="featured-section">
         <div className="featured-content">
           <div className="featured-content__text">
             <div>
-
               <h2 className="featured-content__h2">As featured in...</h2>
               <p className="featured-content__p">Pssst.. click on the cards to learn more!</p>
             </div>
             <div className="marquee">
               <div className="marquee-track">
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo1} alt="logo" />
-                </div>
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo2} alt="logo" />
-                </div>
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo3} alt="logo" />
-                </div>
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo4} alt="logo" />
-                </div>
-
-                {/* Duplicate same items again */}
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo1} alt="logo" />
-                </div>
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo2} alt="logo" />
-                </div>
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo3} alt="logo" />
-                </div>
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo4} alt="logo" />
-                </div>
-
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo1} alt="logo" />
-                </div>
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo2} alt="logo" />
-                </div>
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo3} alt="logo" />
-                </div>
-                <div className="marquee-slider__box">
-                  <img src={marqueelogo4} alt="logo" />
-                </div>
+                <div className="marquee-slider__box"><img src={marqueelogo1} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo2} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo3} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo4} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo1} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo2} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo3} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo4} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo1} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo2} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo3} alt="logo" /></div>
+                <div className="marquee-slider__box"><img src={marqueelogo4} alt="logo" /></div>
               </div>
             </div>
-
           </div>
         </div>
       </section>
-
-
-
     </>
   );
 }

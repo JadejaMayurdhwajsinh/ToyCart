@@ -2,8 +2,6 @@ import "./ProductDescription.css";
 import { useState } from "react";
 import { useCart } from "../../hooks/useCart";
 import APIService from "../../services/api";
-import navprev from "../../assets/nav-prev.svg";
-import navnext from "../../assets/nav-next.svg";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -28,11 +26,15 @@ function ProductDescription({ product, productId }) {
   const handleAddToCart = async (e) => {
     e.preventDefault();
     const token = typeof window !== "undefined" ? localStorage.getItem("customerToken") : null;
-    if (!token) { window.alert("Please login as a customer before adding items to cart."); return; }
+    if (!token) {
+      window.alert("Please login as a customer before adding items to cart.");
+      return;
+    }
     const pid = productId || 1;
     try {
       await APIService.addToCart({ productId: pid, quantity: 1 }, token);
       addToCart({ id: pid, ProductName: title, Price: price, ProductImage: mainImage });
+      window.dispatchEvent(new Event("cartUpdated"));
     } catch (err) {
       window.alert(err.message || "Unable to add to cart. Please try again.");
     }
@@ -41,59 +43,47 @@ function ProductDescription({ product, productId }) {
   return (
     <div className="product-description">
 
-      {/* LEFT — IMAGE SWIPER */}
+      {/* LEFT — IMAGE GALLERY */}
       <div className="product-description__images">
-        <div className="pdp-slider">
 
-          {/* Prev arrow */}
+        {/* Main image box */}
+        <div className="pdp-main-box">
           {allImages.length > 1 && (
-            <button className="pdp-slider__arrow pdp-slider__arrow--prev" onClick={goPrev}>
-              <img src={navprev} alt="prev" />
+            <button className="pdp-arrow pdp-arrow--prev" onClick={goPrev} aria-label="Previous">
+              ‹
             </button>
           )}
 
-          {/* Main image */}
           <img
+            key={activeIndex}
             src={resolveImage(allImages[activeIndex])}
             alt={`${title} view ${activeIndex + 1}`}
-            className="pdp-slider__main-img"
-            onError={(e) => { e.target.style.display = "none"; }}
+            className="pdp-main-img"
+            onError={(e) => { e.target.style.opacity = 0; }}
           />
 
-          {/* Next arrow */}
           {allImages.length > 1 && (
-            <button className="pdp-slider__arrow pdp-slider__arrow--next" onClick={goNext}>
-              <img src={navnext} alt="next" />
+            <button className="pdp-arrow pdp-arrow--next" onClick={goNext} aria-label="Next">
+              ›
             </button>
           )}
+        </div>
 
-          {/* Dots */}
-          {allImages.length > 1 && (
-            <div className="pdp-slider__dots">
-              {allImages.map((_, i) => (
-                <button
-                  key={i}
-                  className={`pdp-slider__dot ${i === activeIndex ? "pdp-slider__dot--active" : ""}`}
-                  onClick={() => setActiveIndex(i)}
-                />
-              ))}
-            </div>
-          )}
-
-          </div>{/* end pdp-slider */}
-
-        {/* Thumbnails — OUTSIDE the white box */}
+        {/* Thumbnails */}
         {allImages.length > 1 && (
-          <div className="product-description__images-bottom">
-            {allImages.map((img, index) => (
-              <img
-                key={index}
-                src={resolveImage(img)}
-                alt={`${title} thumb ${index + 1}`}
-                className={`product-thumb ${index === activeIndex ? "thumb-active" : ""}`}
-                onClick={() => setActiveIndex(index)}
-                onError={(e) => { e.target.style.display = "none"; }}
-              />
+          <div className="pdp-thumbs">
+            {allImages.map((img, i) => (
+              <button
+                key={i}
+                className={`pdp-thumb-btn ${i === activeIndex ? "pdp-thumb-btn--active" : ""}`}
+                onClick={() => setActiveIndex(i)}
+              >
+                <img
+                  src={resolveImage(img)}
+                  alt={`${title} thumb ${i + 1}`}
+                  onError={(e) => { e.target.style.opacity = 0; }}
+                />
+              </button>
             ))}
           </div>
         )}
@@ -105,7 +95,7 @@ function ProductDescription({ product, productId }) {
           <h2 className="product-description__content-title">{title}</h2>
           <p className="product-description__content-price">
             {coinIcon && <span><img src={coinIcon} alt="coin icon" /></span>}
-            {price}
+            ₹{price}
           </p>
           <div className="pdp-stars">
             {[1, 2, 3, 4, 5].map((n) => (

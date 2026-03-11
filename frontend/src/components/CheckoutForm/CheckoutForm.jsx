@@ -4,6 +4,83 @@ import { useNavigate } from "react-router-dom";
 import returnicon from "../../assets/return-icon.svg";
 import APIService from "../../services/api";
 
+// ── Validation rules ──────────────────────────────────────────────
+const validators = {
+    email: (v) => {
+        if (!v.trim()) return "Email is required.";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return "Enter a valid email address.";
+        return "";
+    },
+    phone: (v) => {
+        if (!v.trim()) return "Phone number is required.";
+        if (!/^\d+$/.test(v)) return "Phone number must contain digits only.";
+        if (v.length < 10 || v.length > 15) return "Phone number must be 10–15 digits.";
+        return "";
+    },
+    firstName: (v) => {
+        if (!v.trim()) return "First name is required.";
+        if (/\d/.test(v)) return "First name must not contain numbers.";
+        return "";
+    },
+    lastName: (v) => {
+        if (!v.trim()) return "Last name is required.";
+        if (/\d/.test(v)) return "Last name must not contain numbers.";
+        return "";
+    },
+    address: (v) => {
+        if (!v.trim()) return "Address is required.";
+        if (v.trim().length < 5) return "Please enter a complete address.";
+        return "";
+    },
+    suburb: (v) => {
+        if (!v.trim()) return "Suburb / city is required.";
+        return "";
+    },
+    country: (v) => {
+        if (!v.trim()) return "Country is required.";
+        return "";
+    },
+    state: (v) => {
+        if (!v.trim()) return "State is required.";
+        return "";
+    },
+    postcode: (v) => {
+        if (!v.trim()) return "Postcode is required.";
+        if (!/^\d+$/.test(v)) return "Postcode must contain digits only.";
+        if (v.length < 4 || v.length > 10) return "Enter a valid postcode.";
+        return "";
+    },
+    company: () => "",   // optional — always passes
+};
+
+function validateAll(form) {
+    const errs = {};
+    Object.keys(validators).forEach((field) => {
+        const msg = validators[field](form[field] ?? "");
+        if (msg) errs[field] = msg;
+    });
+    return errs;
+}
+
+// ── Reusable Field component ──────────────────────────────────────
+function Field({ type = "text", placeholder, value, onChange, onBlur, error, ...rest }) {
+    return (
+        <div className="field-wrapper">
+            <input
+                type={type}
+                placeholder={placeholder}
+                value={value}
+                onChange={onChange}
+                onBlur={onBlur}
+                className={error ? "input-error" : ""}
+                {...rest}
+            />
+            {error && <span className="field-error">{error}</span>}
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────
 function CheckoutForm() {
     const navigate = useNavigate();
     const [form, setForm] = useState({
@@ -18,6 +95,9 @@ function CheckoutForm() {
         state: "",
         postcode: "",
     });
+    const [touched, setTouched] = useState({});
+    const [fieldErrors, setFieldErrors] = useState({});
+
     const [cart, setCart] = useState(null);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -45,27 +125,43 @@ function CheckoutForm() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const totalAmount = useMemo(
-        () => cart?.summary?.total ?? 0,
-        [cart]
-    );
+    const totalAmount = useMemo(() => cart?.summary?.total ?? 0, [cart]);
 
-    const handleReturnToCart = () => {
-        navigate("/Order");
-    };
+    const handleReturnToCart = () => navigate("/Order");
 
     const handleChange = (field) => (e) => {
-        setForm((prev) => ({ ...prev, [field]: e.target.value }));
+        const val = e.target.value;
+        setForm((prev) => ({ ...prev, [field]: val }));
+        if (touched[field]) {
+            setFieldErrors((prev) => ({ ...prev, [field]: validators[field](val) }));
+        }
+    };
+
+    const handleBlur = (field) => () => {
+        setTouched((prev) => ({ ...prev, [field]: true }));
+        setFieldErrors((prev) => ({ ...prev, [field]: validators[field](form[field]) }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (!token) {
             setError("Please login as a customer before placing an order.");
             return;
         }
         if (!cart || !cart.items || cart.items.length === 0) {
             setError("Your cart is empty.");
+            return;
+        }
+
+        const allTouched = Object.keys(form).reduce((acc, k) => ({ ...acc, [k]: true }), {});
+        setTouched(allTouched);
+        const errs = validateAll(form);
+        setFieldErrors(errs);
+
+        if (Object.keys(errs).length > 0) {
+            const firstErrorEl = document.querySelector(".input-error");
+            firstErrorEl?.scrollIntoView({ behavior: "smooth", block: "center" });
             return;
         }
 
@@ -84,7 +180,7 @@ function CheckoutForm() {
                 special_notes: "",
             };
 
-            const data = await APIService.placeOrder(payload, token);
+            await APIService.placeOrder(payload, token);
             setSuccess("Order placed successfully!");
             await APIService.clearCart(token);
             setCart({ items: [], summary: { total: 0 } });
@@ -96,92 +192,48 @@ function CheckoutForm() {
         }
     };
 
+    const fieldProps = (name, type = "text") => ({
+        type,
+        value: form[name],
+        onChange: handleChange(name),
+        onBlur: handleBlur(name),
+        error: fieldErrors[name] || "",
+    });
+
     return (
         <section className="checkout-section">
             <div className="checkout-wrapper">
                 <div className="checkout-form">
                     <h2>Checkout</h2>
                     {loading && <p>Loading your cart...</p>}
-                    {error && !loading && <p style={{ color: "#c00" }}>{error}</p>}
-                    {success && <p style={{ color: "#0a0" }}>{success}</p>}
-                    <form onSubmit={handleSubmit}>
+                    {error && !loading && <p className="form-error-banner">{error}</p>}
+                    {success && <p className="form-success-banner">{success}</p>}
+
+                    <form onSubmit={handleSubmit} noValidate>
                         <div className="contact-info">
                             <p>Contact Information</p>
                             <div className="form-row">
-                                <input
-                                    type="email"
-                                    placeholder="Email"
-                                    value={form.email}
-                                    onChange={handleChange("email")}
-                                    required
-                                />
-                                <input
-                                    type="tel"
-                                    placeholder="Phone number"
-                                    value={form.phone}
-                                    onChange={handleChange("phone")}
-                                    required
-                                />
+                                <Field placeholder="Email" {...fieldProps("email", "email")} />
+                                <Field placeholder="Phone number" {...fieldProps("phone", "tel")} />
                             </div>
                         </div>
+
                         <div className="shipping-address">
                             <p>Shipping Address</p>
                             <div className="form-row">
-                                <input
-                                    type="text"
-                                    placeholder="First name"
-                                    value={form.firstName}
-                                    onChange={handleChange("firstName")}
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Last name"
-                                    value={form.lastName}
-                                    onChange={handleChange("lastName")}
-                                    required
-                                />
+                                <Field placeholder="First name" {...fieldProps("firstName")} />
+                                <Field placeholder="Last name" {...fieldProps("lastName")} />
                             </div>
-                            <input
-                                type="text"
-                                placeholder="Company(optional)"
-                                value={form.company}
-                                onChange={handleChange("company")}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Address"
-                                value={form.address}
-                                onChange={handleChange("address")}
-                                required
-                            />
-                            <input
-                                type="text"
-                                placeholder="Suburb"
-                                value={form.suburb}
-                                onChange={handleChange("suburb")}
-                            />
+                            <Field placeholder="Company (optional)" {...fieldProps("company")} />
+                            <Field placeholder="Address" {...fieldProps("address")} />
+                            <Field placeholder="Suburb" {...fieldProps("suburb")} />
                             <div className="form-row">
-                                <input
-                                    type="text"
-                                    placeholder="Country / region"
-                                    value={form.country}
-                                    onChange={handleChange("country")}
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="State / territory"
-                                    value={form.state}
-                                    onChange={handleChange("state")}
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Postcode"
-                                    value={form.postcode}
-                                    onChange={handleChange("postcode")}
-                                />
+                                <Field placeholder="Country / region" {...fieldProps("country")} />
+                                <Field placeholder="State / territory" {...fieldProps("state")} />
+                                <Field placeholder="Postcode" {...fieldProps("postcode")} />
                             </div>
                         </div>
+
                         <div className="buttons">
                             <button type="button" onClick={handleReturnToCart} className="btn-return">
                                 <img src={returnicon} alt="return icon" className="return-icon" />
@@ -193,6 +245,7 @@ function CheckoutForm() {
                         </div>
                     </form>
                 </div>
+
                 <div className="order-summary">
                     <div className="order-items">
                         {cart?.items?.map((item) => (
@@ -208,7 +261,7 @@ function CheckoutForm() {
                                 <div className="item-details">
                                     <p className="item-name">{item.Product?.name}</p>
                                     <p className="item-price">
-                                        ${item.Product?.price} × {item.quantity}
+                                        ₹{item.Product?.price} × {item.quantity}
                                     </p>
                                 </div>
                             </div>
@@ -220,7 +273,7 @@ function CheckoutForm() {
                     <div className="order-total">
                         <div className="total-row">
                             <span>Total</span>
-                            <span className="total-amount">${Number(totalAmount).toFixed(2)}</span>
+                            <span className="total-amount">₹{Number(totalAmount).toFixed(2)}</span>
                         </div>
                         <p className="total-tax">Taxes included where applicable.</p>
                     </div>

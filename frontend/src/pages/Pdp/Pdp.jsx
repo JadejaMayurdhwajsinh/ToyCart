@@ -30,6 +30,8 @@ import Productcard from "../../components/Productcard/Productcard.jsx";
 import APIService from "../../services/api";
 import ProductReviews from "../../components/ProductReviews/ProductReviews.jsx";
 
+const VISIBLE_COUNT = 4;
+
 function Pdp() {
     const { id } = useParams();
     const [product, setProduct] = useState(null);
@@ -37,21 +39,25 @@ function Pdp() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // Slider state
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [animating, setAnimating] = useState(false);
+    const [direction, setDirection] = useState(null);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
                 setError("");
+                setCurrentIndex(0); // reset slider on product change
                 const data = await APIService.getProductById(id);
                 setProduct(data);
 
-                // simple related products: same category, excluding current
                 if (data?.Category?.id) {
                     const res = await APIService.getProducts({
                         category: data.Category.id,
                         limit: 8,
                     });
-
                     const list = Array.isArray(res) ? res : res.products || [];
                     setRelatedProducts(list.filter((p) => p.id !== data.id));
                 }
@@ -64,6 +70,34 @@ function Pdp() {
 
         fetchData();
     }, [id]);
+
+    const maxIndex = Math.max(0, relatedProducts.length - VISIBLE_COUNT);
+
+    const handlePrev = () => {
+        if (animating || currentIndex === 0) return;
+        setDirection("prev");
+        setAnimating(true);
+        setTimeout(() => {
+            setCurrentIndex((prev) => Math.max(0, prev - VISIBLE_COUNT));
+            setAnimating(false);
+            setDirection(null);
+        }, 350);
+    };
+
+    const handleNext = () => {
+        if (animating || currentIndex >= maxIndex) return;
+        setDirection("next");
+        setAnimating(true);
+        setTimeout(() => {
+            setCurrentIndex((prev) => Math.min(maxIndex, prev + VISIBLE_COUNT));
+            setAnimating(false);
+            setDirection(null);
+        }, 350);
+    };
+
+    const visibleRelated = relatedProducts.slice(currentIndex, currentIndex + VISIBLE_COUNT);
+    const totalDots = Math.ceil(relatedProducts.length / VISIBLE_COUNT);
+    const activeDot = Math.floor(currentIndex / VISIBLE_COUNT);
 
     const productData = useMemo(() => {
         if (!product) {
@@ -90,21 +124,9 @@ function Pdp() {
             coinIcon: coin,
             lineIcon: line,
             details: [
-                {
-                    icon: union,
-                    title: "Category",
-                    value: product.Category?.name || "Toys",
-                },
-                {
-                    icon: stacktoy,
-                    title: "Availability",
-                    value: product.availability === "in_stock" ? "In stock" : "Out of stock",
-                },
-                {
-                    icon: earth1,
-                    title: "Rating",
-                    value: product.rating ? `${product.rating} / 5` : "No ratings yet",
-                },
+                { icon: union,    title: "Category",     value: product.Category?.name || "Toys" },
+                { icon: stacktoy, title: "Availability",  value: product.availability === "in_stock" ? "In stock" : "Out of stock" },
+                { icon: earth1,   title: "Rating",        value: product.rating ? `${product.rating} / 5` : "No ratings yet" },
             ],
         };
     }, [product]);
@@ -194,17 +216,20 @@ function Pdp() {
                 </div>
                 <FeaturedItem items={featuredItems} />
             </section>
+
             <FurtherDetails
                 items={furtherDetailsItems}
                 blackline={blackline}
                 instructionupicon={instructionupicon}
                 instructiondownicon={instructiondownicon}
             />
+
             <ProductReviews
                 productId={product?.id}
                 productRating={product?.rating}
                 totalReviews={product?.number_of_reviews}
             />
+
             <section className="pdp-sustainability-section">
                 <div className="pdp-sustainability-content">
                     <div className="pdp-sustainability-section__top">
@@ -214,7 +239,8 @@ function Pdp() {
                         <div>
                             <p className="pdp-sustainability-section__top-img">
                                 <img src={earth} alt="earth img" className="earth-img" />
-                                000,000</p>
+                                000,000
+                            </p>
                         </div>
                     </div>
                     <div className="pdp-sustainability-section__center">
@@ -243,28 +269,92 @@ function Pdp() {
                 </div>
             </section>
 
+            {/* ── Related Products Slider ── */}
             <section className="relatedProduct-section">
                 <div className="relatedProduct-content">
                     <div className="section-heading">
                         <h4>Related products</h4>
                         <div className="heading-actions">
                             <a href="/Alltoys" className="see-all-btn">See all toys</a>
-                            <button className="nav-btn nav-prev"><img src={navprev} alt="nav prev" /></button>
-                            <button className="nav-btn nav-next"><img src={navnext} alt="nav next" /></button>
+                            <button
+                                className={`nav-btn nav-prev ${currentIndex === 0 ? "disabled" : ""}`}
+                                onClick={handlePrev}
+                                disabled={currentIndex === 0 || animating}
+                                aria-label="Previous products"
+                                data-tooltip="Previous"
+                            >
+                                <img src={navprev} alt="nav prev" />
+                            </button>
+                            <button
+                                className={`nav-btn nav-next ${currentIndex >= maxIndex ? "disabled" : ""}`}
+                                onClick={handleNext}
+                                disabled={currentIndex >= maxIndex || animating}
+                                aria-label="Next products"
+                                data-tooltip="Next"
+                            >
+                                <img src={navnext} alt="nav next" />
+                            </button>
                         </div>
                     </div>
-                    {!loading && !error && relatedProducts.map((rp) => (
-                        <Productcard
-                            key={rp.id}
-                            id={rp.id}
-                            ProductImage={rp.image_url}
-                            ProductName={rp.name}
-                            Price={rp.price}
-                            rating={rp.rating}
-                            reviewCount={rp.number_of_reviews}
-                            isNew={rp.is_new}   // ← add this
-                        />
-                    ))}
+
+                    {loading && (
+                        <div className="related-slider-loading">
+                            {[...Array(VISIBLE_COUNT)].map((_, i) => (
+                                <div key={i} className="related-skeleton-card" />
+                            ))}
+                        </div>
+                    )}
+
+                    {!loading && !error && relatedProducts.length > 0 && (
+                        <>
+                            <div className={`related-slider-track ${animating ? `slide-${direction}` : ""}`}>
+                                {visibleRelated.map((rp) => (
+                                    <Productcard
+                                        key={rp.id}
+                                        id={rp.id}
+                                        ProductImage={
+                                            rp.image_url
+                                                ? rp.image_url.startsWith("/uploads")
+                                                    ? `http://localhost:5000${rp.image_url}`
+                                                    : rp.image_url
+                                                : undefined
+                                        }
+                                        ProductName={rp.name}
+                                        Price={rp.price}
+                                        rating={rp.rating}
+                                        reviewCount={rp.number_of_reviews}
+                                        isNew={rp.is_new}
+                                    />
+                                ))}
+                            </div>
+
+                            {totalDots > 1 && (
+                                <div className="related-slider-dots">
+                                    {[...Array(totalDots)].map((_, i) => (
+                                        <button
+                                            key={i}
+                                            className={`dot ${i === activeDot ? "active" : ""}`}
+                                            onClick={() => {
+                                                if (animating) return;
+                                                setDirection(i > activeDot ? "next" : "prev");
+                                                setAnimating(true);
+                                                setTimeout(() => {
+                                                    setCurrentIndex(i * VISIBLE_COUNT);
+                                                    setAnimating(false);
+                                                    setDirection(null);
+                                                }, 350);
+                                            }}
+                                            aria-label={`Go to page ${i + 1}`}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {!loading && !error && relatedProducts.length === 0 && (
+                        <p className="no-products">No related products found.</p>
+                    )}
                 </div>
             </section>
 
@@ -275,14 +365,12 @@ function Pdp() {
                     button="Buy this toy"
                     variant="yellow"
                 />
-
                 <Actioncard
                     title="Sell a toy like this back to Whirli"
                     text="Placerat sollicitudin faucibus egestas viverra, cursus nascetur fermentum nam. Massa egestas arcu blandit a. Suspendisse lectus orci."
                     button="Sell this toy back"
                     variant="white"
                 />
-
                 <Actioncard
                     title="Gift this toy with a Whirli subscription"
                     text="Porta sit id aliquam in lobortis vitae consequat. Massa purus orci volutpat duis parturient. Ut nunc id bibendum."

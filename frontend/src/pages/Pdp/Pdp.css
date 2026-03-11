@@ -100,7 +100,6 @@
   line-height: 23px;
   font-size: 16px;
   color: #255F83;
-  font-size: 16px;
   margin-left: 160px;
 }
 
@@ -162,20 +161,22 @@
   outline: none;
 }
 
+/* ═══════════════════════════════════════
+   Related Products — Slider
+═══════════════════════════════════════ */
 .relatedProduct-section {
   background: #DECCFE;
-  padding: 80px 120px;
+  padding: 80px 60px;
+  overflow: hidden;
 }
 
 .relatedProduct-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 104px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .section-heading {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -214,7 +215,9 @@
   transform: translateY(-2px);
 }
 
+/* Nav buttons with tooltip */
 .nav-btn {
+  position: relative;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -229,28 +232,159 @@
   transition: all 0.3s ease;
 }
 
-.nav-btn:hover {
+.nav-btn img {
+  width: 16px;
+  height: 16px;
+  filter: invert(1);
+}
+
+.nav-btn:hover:not(.disabled):not(:disabled) {
   background-color: #1b4763;
   transform: scale(1.05);
 }
 
-.nav-btn:active {
+.nav-btn:active:not(.disabled):not(:disabled) {
   transform: scale(0.95);
 }
 
-.relatedProduct-content h4 {
-  grid-column: 1 / -1;
+.nav-btn.disabled,
+.nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Tooltip */
+.nav-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1a4460;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 10;
+}
+
+.nav-btn::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  border: 5px solid transparent;
+  border-top-color: #1a4460;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 10;
+}
+
+.nav-btn:not(.disabled):not(:disabled):hover::after,
+.nav-btn:not(.disabled):not(:disabled):hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Slider track */
+.related-slider-track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.related-slider-track.slide-next {
+  animation: relatedSlideLeft 0.35s forwards;
+}
+
+.related-slider-track.slide-prev {
+  animation: relatedSlideRight 0.35s forwards;
+}
+
+@keyframes relatedSlideLeft {
+  0%   { opacity: 1; transform: translateX(0); }
+  50%  { opacity: 0; transform: translateX(-40px); }
+  51%  { opacity: 0; transform: translateX(40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes relatedSlideRight {
+  0%   { opacity: 1; transform: translateX(0); }
+  50%  { opacity: 0; transform: translateX(40px); }
+  51%  { opacity: 0; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* Dot indicators */
+.related-slider-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 32px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: #b5a4e0;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.25s, transform 0.25s;
+}
+
+.dot.active {
+  background: #255F83;
+  transform: scale(1.35);
+}
+
+.dot:hover:not(.active) {
+  background: #7b6ab8;
+}
+
+/* Skeleton loading */
+.related-slider-loading {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.related-skeleton-card {
+  height: 320px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #c9b8f0 25%, #d9cdf5 50%, #c9b8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* No products */
+.no-products {
   color: #255F83;
-  font-size: 64px;
-  margin: 0;
-  font-weight: bolder;
+  font-size: 18px;
+  text-align: center;
+  padding: 40px 0;
 }
 
-.relatedProduct-content .product-card {
-  max-width: 310px;
-  width: 310px;
+/* Product card width fix */
+.related-slider-track .product-card {
+  width: 100%;
+  max-width: 100%;
 }
 
+/* Stars */
 .pdp-stars {
   display: flex;
   align-items: center;
@@ -271,4 +405,12 @@
   color: #7a8aaa;
   font-weight: 700;
   margin-left: 6px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .related-slider-track,
+  .related-slider-loading {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

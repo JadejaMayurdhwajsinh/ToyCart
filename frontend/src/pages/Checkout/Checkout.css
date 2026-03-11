@@ -6,24 +6,24 @@
   background: #F7FFB4;
 }
 
+/* ── More Toys Section ── */
 .moreToys-section {
   background: #DECCFE;
-  padding: 80px 120px;
+  padding: 80px 60px;
+  overflow: hidden;
 }
 
 .moreToys-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 104px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
 }
 
+/* ── Section Heading ── */
 .moreToys-content .section-heading {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 40px;
+  align-items: center;  
 }
 
 .moreToys-content .section-heading h4 {
@@ -33,15 +33,192 @@
   font-weight: bolder;
 }
 
-.moreToys-content h4 {
-  grid-column: 1 / -1;
-  color: #255F83;
-  font-size: 64px;
-  margin: 0;
-  font-weight: bolder;
+.heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.moreToys-content .product-card {
-  max-width: 310px;
-  width: 310px;
+.see-all-btn {
+  padding: 10px 20px;
+  background-color: #255F83;
+  color: #FFFFFF;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+}
+
+.see-all-btn:hover {
+  background-color: #1b4763;
+  transform: translateY(-2px);
+}
+
+/* ── Nav Buttons — exact same style, tooltip added ── */
+.nav-btn {
+  position: relative;
+  background: #255F83;
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+}
+
+.nav-btn img {
+  width: 18px;
+  height: 18px;
+  filter: invert(1);
+}
+
+.nav-btn:hover:not(.disabled) {
+  background: #1a4460;
+  transform: scale(1.08);
+}
+
+.nav-btn.disabled,
+.nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Tooltip label */
+.nav-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1a4460;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 10;
+}
+
+/* Arrow under tooltip */
+.nav-btn::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  border: 5px solid transparent;
+  border-top-color: #1a4460;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 10;
+}
+
+.nav-btn:not(.disabled):not(:disabled):hover::after,
+.nav-btn:not(.disabled):not(:disabled):hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Slider Track ── */
+.slider-track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.slider-track.slide-next {
+  animation: slideOutLeft 0.35s forwards;
+}
+
+.slider-track.slide-prev {
+  animation: slideOutRight 0.35s forwards;
+}
+
+@keyframes slideOutLeft {
+  0%   { opacity: 1; transform: translateX(0); }
+  50%  { opacity: 0; transform: translateX(-40px); }
+  51%  { opacity: 0; transform: translateX(40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutRight {
+  0%   { opacity: 1; transform: translateX(0); }
+  50%  { opacity: 0; transform: translateX(40px); }
+  51%  { opacity: 0; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Dot Indicators ── */
+.slider-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: #a89fd4;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.25s, transform 0.25s;
+}
+
+.dot.active {
+  background: #255F83;
+  transform: scale(1.35);
+}
+
+.dot:hover:not(.active) {
+  background: #7b6ab8;
+}
+
+/* ── Skeleton Loading ── */
+.slider-loading {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.skeleton-card {
+  height: 320px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #c9b8f0 25%, #d9cdf5 50%, #c9b8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── No Products ── */
+.no-products {
+  color: #255F83;
+  font-size: 18px;
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* ── Product Card width fix inside slider ── */
+.slider-track .product-card {
+  width: 100%;
+  max-width: 100%;
 }
